@@ -36,7 +36,7 @@ namespace helios {
 //                                                                                               FORWARD DECLARATIONS
 // *********************************************************************************************************************
 class Shape;
-class Primitive;
+class GeometricPrimitive;
 
 // *********************************************************************************************************************
 //                                                                                                        Interaction
@@ -103,12 +103,12 @@ public:
   /// \param dndu change in surface's normal at u direction
   /// \param dndv change in surface's normal at v direction
   /// \param t ray's parametric coordinate
-  SurfaceInteraction(const hermes::point3 &point,
-                     const hermes::vec3 &pointError, const hermes::point2f &uv,
-                     const hermes::vec3 &outgoingDirection,
-                     const hermes::vec3 &dpdu, const hermes::vec3 &dpdv,
-                     const hermes::normal3 &dndu, const hermes::normal3 &dndv,
-                     real_t t, const Shape *shape);
+  HERMES_DEVICE_CALLABLE SurfaceInteraction(const hermes::point3 &point,
+                                            const hermes::vec3 &pointError, const hermes::point2f &uv,
+                                            const hermes::vec3 &outgoingDirection,
+                                            const hermes::vec3 &dpdu, const hermes::vec3 &dpdv,
+                                            const hermes::normal3 &dndu, const hermes::normal3 &dndv,
+                                            real_t t, const Shape *shape);
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
@@ -117,10 +117,10 @@ public:
   /// \param dndus change in surface's normal at u direction
   /// \param dndvs change in surface's normal at v direction
   /// \param orientationIsAuthoritative
-  void setShadingGeometry(const hermes::vec3 &dpdus, const hermes::vec3 &dpdvs,
-                          const hermes::normal3 &dndus,
-                          const hermes::normal3 &dndvs,
-                          bool orientationIsAuthoritative);
+  HERMES_DEVICE_CALLABLE void setShadingGeometry(const hermes::vec3 &dpdus, const hermes::vec3 &dpdvs,
+                                                 const hermes::normal3 &dndus,
+                                                 const hermes::normal3 &dndvs,
+                                                 bool orientationIsAuthoritative);
   ///
   /// \param ray
   /// \param arena used to allocate memory for BSDFs and BSSRDFs
@@ -131,6 +131,9 @@ public:
 //  void computeScatteringFunctions(const RayDifferential &ray,
 //                                  hermes::MemoryArena &arena,
 //                                  bool allowMultipleLobes, TransportMode mode);
+  ///
+  /// \param ray
+  HERMES_DEVICE_CALLABLE void computeDifferentials(const RayDifferential &ray) const;
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
@@ -146,9 +149,11 @@ public:
     hermes::normal3 dndu, dndv;
   } shading; //!< represents perturbations on the quantities of the interaction (ex: bump mapping)
   const Shape *shape = nullptr;
-  const Primitive *primitive = nullptr;
+  const GeometricPrimitive *primitive = nullptr;
 //  BSDF *bsdf = nullptr;
 //  BSSRDF *bssrdf = nullptr;
+  mutable hermes::vec3 dpdx, dpdy;
+  mutable real_t dudx = 0, dvdx = 0, dudy = 0, dvdy = 0;
 };
 
 } // namespace helios

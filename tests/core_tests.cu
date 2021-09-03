@@ -72,7 +72,6 @@ TEST_CASE("Shapes and Primitives", "[core]") {
 }
 
 TEST_CASE("Scene") {
-  Scene
 }
 
 TEST_CASE("film") {

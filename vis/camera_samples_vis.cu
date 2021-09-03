@@ -57,7 +57,8 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
     spheres[0] = helios::Sphere::unitSphere();
     hermes::DeviceArray<helios::Sphere> d_spheres = spheres;
     hermes::Array<helios::Shape> shapes(1);
-    shapes[0] = helios::Sphere::createShape(spheres[0], Transform());
+    shapes[0] = helios::Sphere::createShape(spheres[0],
+                                            hermes::Transform::translate({0, 0, 5}));
     shapes[0].primitive_data = d_spheres.data();
     // setup aggregate
     ListAggregate list(shapes);
@@ -66,9 +67,12 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
     scene.setAggregate(list.handle());
     scene.setLights(lights);
 
+    // image resolution
+    size2 res(1024, 1024);
+
     // setup film_image
     BoxFilter filter({1, 1});
-    FilmImage film_image(Film({16, 16}, &filter, 10));
+    FilmImage film_image(Film(res, &filter, 10));
     // setup camera
     PerspectiveCamera camera(AnimatedTransform(),
                              {{-1, -1}, {1, 1}}, film_image.film().full_resolution,
@@ -76,7 +80,7 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
 
     // setup renderer
     WhittedIntegrator integrator;
-    SamplerRenderer renderer(range2(size2(16, 16)));
+    SamplerRenderer renderer((range2(res)));
     // run
     renderer.render(camera, film_image, integrator, scene.view());
     // image
@@ -86,6 +90,7 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
                               film_image.film().cropped_pixel_bounds,
                               film_image.film().full_resolution))
 
+    exit(0);
     {// dump camera
       MemoryDumper::dump(&camera,
                          1,
@@ -93,12 +98,14 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
                          PerspectiveCamera::memoryDumpLayout(),
                          memory_dumper_options::type_values | memory_dumper_options::colored_output);
     }
+
+#ifdef HELIOS_DEBUG_DATA
     {// dump samples
       HostMemory hm = renderer.debug_samples;
       renderer.debug_pool.setData(hm.ptr());
       SamplePool::dumpMemory(renderer.debug_pool, renderer.debug_render_info.n_tiles.total());
     }
-    Array<RayDifferential> hm = renderer.debug_rays;
+    Array<RayDifferential> hm;// = renderer.debug_rays;
     MemoryDumper::dump(hm.data(), 4, sizeof(RayDifferential),
                        RayDifferential::memoryDumpLayout().withCount(4),
                        memory_dumper_options::colored_output | memory_dumper_options::type_values);
@@ -114,7 +121,7 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
     auto pos = aos.field<vec3>("p");
     pos[0] = vec3();
     for (size_t i = 1; i < pos.size(); ++i) {
-      pos[i] = hm[i - 1].ray.d;
+      pos[i] = hm[i - 1].ray.d * 40;
       indices.emplace_back(0);
       indices.emplace_back(i);
     }
@@ -137,6 +144,10 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
                                      circe::shape_options::wireframe);
     film_grid.program.link(shaders_path, "color");
 
+    sphere = circe::Shapes::icosphere(4, circe::shape_options::normal);
+    sphere.transform = hermes::Transform::translate({0, 0, 5});
+    sphere.program.link(shaders_path, "color");
+#endif
   }
   void render(circe::CameraInterface *camera) override {
     glEnable(GL_DEPTH_TEST);
@@ -154,10 +165,18 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
     film_grid.program.setUniform("projection", camera->getProjectionTransform());
     film_grid.program.setUniform("color", circe::Color::Red());
     film_grid.draw();
+
+    sphere.program.use();
+    sphere.program.setUniform("view", camera->getViewTransform());
+    sphere.program.setUniform("model", sphere.transform);
+    sphere.program.setUniform("projection", camera->getProjectionTransform());
+    sphere.program.setUniform("color", circe::Color::Red(0.2));
+    sphere.draw();
   }
 
   circe::gl::SceneModel ray_set;
   circe::gl::SceneModel film_grid;
+  circe::gl::SceneModel sphere;
 };
 
 int main() {

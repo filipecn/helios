@@ -19,30 +19,39 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file utils.h
+///\file intersection.cpp
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-07-02
+///\date 2021-08-17
 ///
 ///\brief
 
-#ifndef HELIOS_HELIOS_GEOMETRY_UTILS_H
-#define HELIOS_HELIOS_GEOMETRY_UTILS_H
+#include <helios/shapes/intersection.h>
 
-#include <hermes/numeric/e_float.h>
-#include <hermes/geometry/normal.h>
+namespace helios::intersection {
 
-namespace helios {
-
-bool HERMES_DEVICE_CALLABLE solve_quadratic(hermes::EFloat A, hermes::EFloat B, hermes::EFloat C,
-                                            hermes::EFloat *t0,
-                                            hermes::EFloat *t1);
-
-template<typename T>
-HERMES_DEVICE_CALLABLE inline hermes::Normal3<T> faceForward(const hermes::Normal3<T> &n,
-                                                             const hermes::Normal3<T> &v) {
-  return (hermes::dot((hermes::Vector3<T>) n, (hermes::Vector3<T>) v) < 0.f) ? -n : n;
+HERMES_DEVICE_CALLABLE bool intersectP(const bounds3 &bounds,
+                                       const Ray &ray,
+                                       real_t *hitt_0,
+                                       real_t *hitt_1) {
+  real_t t0 = 0, t1 = ray.max_t;
+  for(int i = 0; i < 3; ++i) {
+    real_t inv_ray_dir = 1 / ray.d[i];
+    real_t t_near = (bounds.lower[i] - ray.o[i]) * inv_ray_dir;
+    real_t t_far = (bounds.upper[i] - ray.o[i]) * inv_ray_dir;
+    if(t_near > t_far) {
+      auto tt = t_near;
+      t_near = t_far;
+      t_far = tt;
+    }
+    t_far *= 1 + 2 * hermes::Numbers::gamma(3);
+    t0 = t_near > t0 ? t_near : t0;
+    t1 = t_far < t1 ? t_far : t1;
+    if(t0 > t1)
+      return false;
+  }
+  if(hitt_0) *hitt_0 = t0;
+  if(hitt_1) *hitt_1 = t1;
+  return true;
 }
 
 }
-
-#endif //HELIOS_HELIOS_GEOMETRY_UTILS_H

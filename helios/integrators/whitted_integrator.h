@@ -56,7 +56,6 @@ public:
       return L;
     }
     // Compute emitted and reflected light at ray intersection point
-
     // Initialize common variables for Whitted integrator
     const hermes::normal3 &n = isect.shading.n;
     hermes::vec3 wo = isect.interaction.wo;

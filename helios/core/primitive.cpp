@@ -22,29 +22,54 @@
  *
  */
 
-#include "primitive.h"
 #include <helios/core/primitive.h>
+#include <helios/shapes/sphere.h>
 
 namespace helios {
 
-bool GeometricPrimitive::intersect(const HRay &r,
-                                   SurfaceInteraction *si) const {
-  real_t tHit;
-  if (!shape_->intersect(r, &tHit, si))
-    return false;
-  r.max_t = tHit;
-  si->primitive = this;
-  // initializesurface interaction::medium interface after shape intersection
-  // TODO pg 685
-  return true;
+#define CAST_SHAPE(C) reinterpret_cast<C*>(shape_->primitive_data)
+
+#define INTERSECT_P_SHAPE(C) CAST_SHAPE(C)->intersectP(*shape_, ray, false)
+
+HERMES_DEVICE_CALLABLE bounds3 GeometricPrimitive::worldBounds() const {
+  return shape_->bounds;
 }
 
-void GeometricPrimitive::computeScatteringFunctions(
-    SurfaceInteraction *isect, ponos::MemoryArena &arena,
-    bool allowMultipleLobes) const {
-  //  if (material)
-  //    material->computeScatteringFunctions(isect, arena, mode,
-  //                                         allowMultipleLobes);
+HERMES_DEVICE_CALLABLE bool GeometricPrimitive::intersect(const Ray &ray, SurfaceInteraction *si) const {
+#define SHAPE_CASE(E, C) case ShapeType::E:  \
+if(INTERSECT_P_SHAPE(C))  \
+  intersected = CAST_SHAPE(C)->intersect(shape_, ray, &cur_hit, si, false); \
+ break;
+
+  bool intersected = false;
+  real_t cur_hit = 0;
+  switch (shape_->type) {
+  SHAPE_CASE(SPHERE, Sphere)
+  case ShapeType::MESH:break;
+  case ShapeType::CUSTOM:break;
+  }
+  if (!intersected)
+    return false;
+  ray.max_t = cur_hit;
+  si->primitive = this;
+  // CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
+  // TODO handle medium
+  return true;
+#undef SHAPE_CASE
 }
+
+HERMES_DEVICE_CALLABLE bool GeometricPrimitive::intersectP(const Ray &ray) const {
+#define SHAPE_CASE(E, C) case ShapeType::E: intersected = INTERSECT_P_SHAPE(C); break;
+  bool intersected = false;
+  switch (shape_->type) {
+  SHAPE_CASE(SPHERE, Sphere)
+  case ShapeType::MESH:break;
+  case ShapeType::CUSTOM:break;
+  }
+  return intersected;
+#undef SHAPE_CAS
+}
+
+#undef CAST_SHAPE
 
 } // namespace helios

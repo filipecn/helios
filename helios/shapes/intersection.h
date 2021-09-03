@@ -19,30 +19,27 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file utils.h
+///\file intersection.h
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-07-02
+///\date 2021-08-17
 ///
 ///\brief
 
-#ifndef HELIOS_HELIOS_GEOMETRY_UTILS_H
-#define HELIOS_HELIOS_GEOMETRY_UTILS_H
+#ifndef HELIOS_SHAPES_INTERSECTION_H
+#define HELIOS_SHAPES_INTERSECTION_H
 
-#include <hermes/numeric/e_float.h>
-#include <hermes/geometry/normal.h>
+#include <helios/geometry/ray.h>
+#include <helios/geometry/bounds.h>
+#include <helios/shapes/sphere.h>
+#include <helios/core/interaction.h>
 
-namespace helios {
+namespace helios::intersection {
 
-bool HERMES_DEVICE_CALLABLE solve_quadratic(hermes::EFloat A, hermes::EFloat B, hermes::EFloat C,
-                                            hermes::EFloat *t0,
-                                            hermes::EFloat *t1);
-
-template<typename T>
-HERMES_DEVICE_CALLABLE inline hermes::Normal3<T> faceForward(const hermes::Normal3<T> &n,
-                                                             const hermes::Normal3<T> &v) {
-  return (hermes::dot((hermes::Vector3<T>) n, (hermes::Vector3<T>) v) < 0.f) ? -n : n;
-}
+HERMES_DEVICE_CALLABLE bool intersectP(const bounds3 &bounds,
+                                       const Ray &ray,
+                                       real_t *hitt_0,
+                                       real_t *hitt_1);
 
 }
 
-#endif //HELIOS_HELIOS_GEOMETRY_UTILS_H
+#endif // HELIOS_SHAPES_INTERSECTION_H

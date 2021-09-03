@@ -68,7 +68,7 @@ public:
   /// \param isect
   /// \param test_alpha_texture
   /// \return
-  HERMES_DEVICE_CALLABLE bool intersect(const Shape &shape, const Ray &r, real_t *tHit, SurfaceInteraction *isect,
+  HERMES_DEVICE_CALLABLE bool intersect(const Shape *shape, const Ray &r, real_t *tHit, SurfaceInteraction *isect,
                                         bool test_alpha_texture) const;
   /// \param r
   /// \param test_alpha_texture

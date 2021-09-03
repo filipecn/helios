@@ -11,7 +11,7 @@ Shape Sphere::createShape(const Sphere &sphere, const hermes::Transform &o2w) {
   return {
       .o2w = o2w,
       .w2o = inverse(o2w),
-      .bounds = sphere.objectBound(),
+      .bounds = o2w(sphere.objectBound()),
       .primitive_data = nullptr,
       .type = ShapeType::SPHERE,
       .flags = shape_flags::NONE
@@ -32,13 +32,13 @@ HERMES_DEVICE_CALLABLE bbox3 Sphere::objectBound() const {
   return bbox3(point3(-radius, -radius, zmin), point3(radius, radius, zmax));
 }
 
-HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape &shape, const Ray &r, real_t *tHit, SurfaceInteraction *isect,
+HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, real_t *tHit, SurfaceInteraction *isect,
                                               bool test_alpha_texture) const {
   real_t phi;
   point3 phit;
   // transform HRay to object space
   vec3f oErr, dErr;
-  Ray ray = transform(shape.w2o, r, oErr, dErr);
+  Ray ray = transform(shape->w2o, r, oErr, dErr);
   //    initialize efloat ray coordinate valyes
   EFloat ox(ray.o.x, oErr.x), oy(ray.o.y, oErr.y), oz(ray.o.z, oErr.z);
   EFloat dx(ray.d.x, dErr.x), dy(ray.d.y, dErr.y), dz(ray.d.z, dErr.z);
@@ -124,9 +124,9 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape &shape, const Ray &r, 
   // compute error bounds for sphere intersection
   vec3f pError = Numbers::gamma(5) * abs((vec3f) phit);
   // initialize SurfaceInteraction from parametric information
-//  *isect = transform(shape.o2w, SurfaceInteraction(phit, pError, point2f(u, v),
-//                                                   -ray.d, dpdu, dpdv, dndu, dndv,
-//                                                   ray.time, this));
+  *isect = transform(shape->o2w, SurfaceInteraction(phit, pError, point2f(u, v),
+                                                   -ray.d, dpdu, dpdv, dndu, dndv,
+                                                   ray.time, shape));
   // update tHit for quadric intersection
   *tHit = (real_t) (thit);
   return true;

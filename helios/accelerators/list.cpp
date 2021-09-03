@@ -27,8 +27,13 @@
 
 #include <helios/accelerators/list.h>
 #include <helios/shapes/sphere.h>
+#include <helios/shapes/intersection.h>
 
 namespace helios {
+
+#define CAST_SHAPE(C) reinterpret_cast<C*>(shape.value.primitive_data)
+
+#define INTERSECT_P_SHAPE(C) CAST_SHAPE(C)->intersectP(shape.value, ray, false)
 
 ListAggregate::View::View(const hermes::ConstArrayView<Shape> &shapes, const bounds3 &world_bounds)
     : shapes_(shapes), world_bounds_(world_bounds) {}
@@ -38,17 +43,42 @@ HERMES_DEVICE_CALLABLE const helios::bounds3 &ListAggregate::View::worldBound() 
 }
 
 HERMES_DEVICE_CALLABLE bool ListAggregate::View::intersect(const Ray &ray, SurfaceInteraction *isect) const {
-  return false;
+#define SHAPE_CASE(E, C) case ShapeType::E:  \
+if(INTERSECT_P_SHAPE(C))  \
+  intersected = CAST_SHAPE(C)->intersect(&shape.value, ray, &cur_hit, &local_isect, false); \
+ break;
+
+  real_t t_min, t_max;
+
+  if (!intersection::intersectP(world_bounds_, ray, &t_min, &t_max))
+    return false;
+
+  SurfaceInteraction local_isect;
+  bool intersected = false;
+  real_t min_hit = hermes::Constants::real_infinity;
+  real_t cur_hit = 0;
+  for (const auto &shape : shapes_) {
+    switch (shape.value.type) {
+    SHAPE_CASE(SPHERE, Sphere)
+    case ShapeType::MESH:break;
+    case ShapeType::CUSTOM:break;
+    }
+    if (intersected && cur_hit < min_hit) {
+      *isect = local_isect;
+      min_hit = cur_hit;
+    }
+  }
+  return intersected;
+#undef SHAPE_CASE
 }
 
 HERMES_DEVICE_CALLABLE bool ListAggregate::View::intersectP(const Ray &ray) const {
+#define SHAPE_CASE(E, C) case ShapeType::E: intersected = INTERSECT_P_SHAPE(C); break;
+
   bool intersected = false;
   for (auto shape : shapes_) {
     switch (shape.value.type) {
-    case ShapeType::SPHERE:
-      intersected = reinterpret_cast<Sphere *>(shape.value.primitive_data)->
-          intersectP(shape.value, ray, false);
-      break;
+    SHAPE_CASE(SPHERE, Sphere)
     case ShapeType::MESH:break;
     case ShapeType::CUSTOM:break;
     }
@@ -56,6 +86,7 @@ HERMES_DEVICE_CALLABLE bool ListAggregate::View::intersectP(const Ray &ray) cons
       return true;
   }
   return intersected;
+#undef SHAPE_CASE
 }
 
 ListAggregate::ListAggregate(const hermes::Array<Shape> &shapes) {
@@ -81,5 +112,7 @@ Aggregate ListAggregate::handle() {
       .type = AggregateType::LIST
   };
 }
+
+#undef CAST_SHAPE
 
 }

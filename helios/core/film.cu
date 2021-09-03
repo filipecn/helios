@@ -25,6 +25,14 @@ HERMES_DEVICE_CALLABLE void FilmTile::addSample(const point2 &p, const Spectrum 
   index2 p1 = floor(p_discrete + filter_->radius) + vec2(1);
   p0 = max(p0, pixel_bounds_.lower());
   p1 = min(p1, pixel_bounds_.upper());
+
+//  printf("%d %d %d %d (%d %d %d %d)\n",
+//         pixel_bounds_.lower().i,
+//         pixel_bounds_.lower().j,
+//         pixel_bounds_.upper().i,
+//         pixel_bounds_.upper().j,
+//         p0.i, p0.j, p1.i, p1.j);
+
   // loop over filter support and add sample to pixel arrays
   // precompute x and y filter table offsets
   int *ifx = new int[p1.i - p0.i];
@@ -38,7 +46,6 @@ HERMES_DEVICE_CALLABLE void FilmTile::addSample(const point2 &p, const Spectrum 
     real_t fy = abs((y - p_discrete.y) * filter_->inv_radius.y * PCF::filter_table_width);
     ifx[y - p0.j] = min((int) floor(fy), PCF::filter_table_width - 1);
   }
-
   for (auto ij : range2(p0, p1)) {
     // evaluate filter value at (x, y) pixel
     int offset = ify[ij.j - p0.j] * PCF::filter_table_width + ifx[ij.i - p0.i];

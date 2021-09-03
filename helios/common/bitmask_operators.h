@@ -51,7 +51,7 @@ struct EnableBitMaskOperators<x>     \
     static const bool enable = true; \
 }
 
-#define HELIOS_MASK_BIT(MASK, BIT) ((MASK) & (BIT)) == (BIT)
+#define HELIOS_MASK_BIT(MASK, BIT) ((u32)(MASK) & (u32)(BIT)) == (u32)(BIT)
 
 template<typename Enum>
 struct EnableBitMaskOperators {

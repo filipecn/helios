@@ -27,7 +27,6 @@
 
 #include <catch2/catch.hpp>
 
-#include <helios/integrators/sampler_integrator.cuh>
 #include <helios/cameras/perspective_camera.h>
 #include <hermes/storage/array.h>
 

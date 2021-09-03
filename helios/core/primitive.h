@@ -32,29 +32,27 @@
 namespace helios {
 
 /// A primitive is a simple scene element which can interact with light
-/// and compute intersections with other elements. Is the bridge between the
+/// and compute intersections with other elements. It is the bridge between the
 /// geometry and shading.
-class Primitive {
+class GeometricPrimitive {
 public:
-  Primitive();
-  virtual ~Primitive();
   /// \return world space bounds
-  virtual bounds3f worldBound() const = 0;
+  [[nodiscard]] HERMES_DEVICE_CALLABLE bounds3 worldBounds() const;
   /// Computes intersection of primitive with ray
   /// \param r ray
   /// \param si surface interaction object
   /// \return true if intersection exists
-  virtual bool intersect(const HRay &r, SurfaceInteraction *si) const = 0;
+  HERMES_DEVICE_CALLABLE bool intersect(const Ray &r, SurfaceInteraction *si) const;
   /// Predicate to ray - primitive intersection
   /// \param r ray
   /// \return true if intersection exits
-  virtual bool intersectP(const HRay &r) const = 0;
+  [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Ray &r) const;
   /// Light emissive primitives contain an area light object
   /// \return area light object if primitive is light emissive, nullptr
   /// otherwise
-  // TODO virtual const AreaLight *getAreaLight() const = 0;
+  // TODO  const AreaLight *getAreaLight() const = 0;
   /// \return primitive's material (nullptr can be returned)
-  // TODO virtual const Material *material() const = 0;
+  // TODO  const Material *material() const = 0;
   /// Initializes representations of light scattering properties of the material
   /// at the intersection point on the surface
   /// \param isect intersection information
@@ -62,24 +60,11 @@ public:
   /// \param mode indicates if the ray is coming from a camera or a light
   /// source
   /// \param allowMultipleLobes sets how some BRDFs are represented
-  virtual void
-  computeScatteringFunctions(SurfaceInteraction *isect,
-                             ponos::MemoryArena &arena /*, TransportMode mode*/,
-                             bool allowMultipleLobes) const = 0;
-};
-
-class GeometricPrimitive : public Primitive {
-public:
-  bounds3f worldBound() const override;
-  bool intersect(const HRay &r, SurfaceInteraction *si) const override;
-  bool intersectP(const HRay &r) const override;
-  void
-  computeScatteringFunctions(SurfaceInteraction *isect,
-                             ponos::MemoryArena &arena /*, TransportMode mode*/,
-                             bool allowMultipleLobes) const override;
-
+//  HERMES_DEVICE_CALLABLE void computeScatteringFunctions(SurfaceInteraction *isect,
+//                                                         ponos::MemoryArena &arena /*, TransportMode mode*/,
+//                                                         bool allowMultipleLobes) const;
 private:
-  std::shared_ptr<Shape> shape_;
+  Shape *shape_;
   // TODO std::shared_ptr<Material> material_;
   // TODO std::shared_ptr<AreaLight> areaLight_;
   // TODO MediumInterface mediumInterface;

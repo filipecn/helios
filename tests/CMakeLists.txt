@@ -3,8 +3,9 @@ set(SOURCES
         common_tests.cu
         core_tests.cu
         geometry_tests.cu
-        integrators_tests.cu
+#        integrators_tests.cu
         sampling_tests.cu
+        shape_tests.cu
         )
 
 add_executable(helios_tests ${SOURCES})

@@ -65,6 +65,7 @@ set(HEADERS
         helios/core/filter.h
         helios/core/interaction.h
         helios/core/light.h
+        helios/core/primitive.h
         helios/core/renderer.cuh
         #        helios/core/sampler.h
         helios/core/sampling.h
@@ -81,6 +82,7 @@ set(HEADERS
         helios/samplers/pixel_sampler.h
         helios/samplers/sample_pool.h
         helios/samplers/stratified_sampler.h
+        helios/shapes/intersection.h
         helios/shapes/sphere.h
         )
 
@@ -94,6 +96,7 @@ set(SOURCES
         helios/core/filter.cpp
         helios/core/interaction.cpp
         helios/core/light.cpp
+        helios/core/primitive.cpp
         #        helios/core/sampler.cpp
         helios/core/sampling.cpp
         helios/core/scene.cpp
@@ -107,6 +110,7 @@ set(SOURCES
         helios/samplers/pixel_sampler.cpp
         helios/samplers/sample_pool.cpp
         helios/samplers/stratified_sampler.cu
+        helios/shapes/intersection.cpp
         helios/shapes/sphere.cu
         )
 
@@ -126,7 +130,7 @@ set_source_files_properties(
 add_dependencies(helios hermes)
 target_link_libraries(helios PUBLIC ${HERMES_LIBRARIES})
 target_compile_definitions(helios PUBLIC
-        -DHELIOS_DEBUG_DATA=1
+#        -DHELIOS_DEBUG_DATA=1
         -DENABLE_CUDA=1
         -D__CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__=1)
 target_include_directories(helios PUBLIC ${HERMES_INCLUDES} ${HELIOS_SOURCE_DIR} ${STB_INCLUDES})

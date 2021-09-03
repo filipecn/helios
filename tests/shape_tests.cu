@@ -19,30 +19,24 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file utils.h
+///\file shape_tests.cpp
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-07-02
+///\date 2021-08-19
 ///
 ///\brief
 
-#ifndef HELIOS_HELIOS_GEOMETRY_UTILS_H
-#define HELIOS_HELIOS_GEOMETRY_UTILS_H
+#include <catch2/catch.hpp>
 
-#include <hermes/numeric/e_float.h>
-#include <hermes/geometry/normal.h>
+#include <helios/geometry/ray.h>
+#include <helios/shapes/sphere.h>
+#include <helios/core/shape.h>
+#include <helios/shapes/intersection.h>
 
-namespace helios {
+using namespace helios;
 
-bool HERMES_DEVICE_CALLABLE solve_quadratic(hermes::EFloat A, hermes::EFloat B, hermes::EFloat C,
-                                            hermes::EFloat *t0,
-                                            hermes::EFloat *t1);
-
-template<typename T>
-HERMES_DEVICE_CALLABLE inline hermes::Normal3<T> faceForward(const hermes::Normal3<T> &n,
-                                                             const hermes::Normal3<T> &v) {
-  return (hermes::dot((hermes::Vector3<T>) n, (hermes::Vector3<T>) v) < 0.f) ? -n : n;
+TEST_CASE("bounds", "[geometry]") {
+  Ray ray({0, 0, 0}, {1, 0, 0});
+  bounds3 box{{2, -1, -1}, {4, 2, 2}};
+  real_t h0, h1;
+  REQUIRE(intersection::intersectP(box, ray, &h0, &h1));
 }
-
-}
-
-#endif //HELIOS_HELIOS_GEOMETRY_UTILS_H
