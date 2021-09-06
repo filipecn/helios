@@ -184,7 +184,7 @@ TEST_CASE("SamplePool", "[sampling]") {
     hermes::UnifiedArray<int> results(1);
     HERMES_CUDA_LAUNCH_AND_SYNC((pool_size), fill_pool_k, pool, pool_size, results.data())
     REQUIRE(results[0] == 0);
-//    HERMES_LOG_VARIABLE(SamplePool::dumpMemory(pool, pool_size))
+    HERMES_LOG_VARIABLE(SamplePool::dumpMemory(pool, pool_size))
   }//
 }
 
@@ -197,7 +197,7 @@ TEST_CASE("StratifiedSampler", "[sampling]") {
     sampler.startPixel({});
 
     auto pool = sampler.samplePool();
-//    HERMES_LOG_VARIABLE(SamplePool::dumpMemory(pool,1))
+    HERMES_LOG_VARIABLE(SamplePool::dumpMemory(pool,1))
     for (auto ij : hermes::range2(hermes::size2(2, 2))) {
       HERMES_LOG_VARIABLE(ij)
       HERMES_LOG_VARIABLE(pool.get1DSample());

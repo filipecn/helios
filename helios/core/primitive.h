@@ -31,6 +31,17 @@
 
 namespace helios {
 
+enum class PrimitiveType {
+  GEOMETRIC_PRIMITIVE,
+  CUSTOM
+};
+
+// Base data for primitives
+struct Primitive {
+  PrimitiveType type{PrimitiveType::GEOMETRIC_PRIMITIVE};
+  void *primitive_data{nullptr};
+};
+
 /// A primitive is a simple scene element which can interact with light
 /// and compute intersections with other elements. It is the bridge between the
 /// geometry and shading.
