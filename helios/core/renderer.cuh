@@ -162,8 +162,14 @@ public:
     // Compute image sample bounds
     range2 sample_bounds(film_image.film().sampleBounds());
 
+    Log::info("Scene content:");
+    Log::info("  {} lights", scene.lights.size().total());
+    Log::info("  {} shapes", scene.shapes.size().total());
+    Log::info("  {} primitives", scene.primitives.size().total());
+
     // Prepare render info
     RenderInfo render_info(pixel_bounds_, sample_bounds);
+    Log::info("Render info:");
     Log::info("Image Resolution: {} {}", render_info.pixel_bounds.lower(), render_info.pixel_bounds.upper());
     Log::info("Sample Region: {} {}", render_info.sample_bounds.lower(), render_info.sample_bounds.upper());
     Log::info("Tile Size: {}", render_info.tile_size);

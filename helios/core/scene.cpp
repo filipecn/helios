@@ -27,49 +27,89 @@
 
 #include <helios/core/scene.h>
 #include <helios/accelerators/list.h>
+#include <hermes/common/cuda_utils.h>
 
 namespace helios {
 
 HERMES_DEVICE_CALLABLE const bounds3 &Scene::View::worldBound() const {
-  return world_bounds_;
+  if (aggregate_.type == AggregateType::LIST)
+    return reinterpret_cast<const ListAggregate::View *>(aggregate_.data_ptr.get())->worldBound();
+  return {};
 }
 
 HERMES_DEVICE_CALLABLE bool Scene::View::intersect(const Ray &ray, SurfaceInteraction *isect) const {
-  if (!aggregate_.aggregate)
-    return false;
   // TODO check ray direction not null
   if (aggregate_.type == AggregateType::LIST)
-    return reinterpret_cast<ListAggregate::View *>(aggregate_.aggregate)->intersect(ray, isect);
+    return reinterpret_cast<const ListAggregate::View *>(aggregate_.data_ptr.get())->intersect(ray, isect);
   return false;
 }
 
 HERMES_DEVICE_CALLABLE bool Scene::View::intersectP(const Ray &ray) const {
-  if (!aggregate_.aggregate)
-    return false;
   // TODO check ray direction not null
   if (aggregate_.type == AggregateType::LIST)
-    return reinterpret_cast<ListAggregate::View *>(aggregate_.aggregate)->intersectP(ray);
+    return reinterpret_cast<const ListAggregate::View *>(aggregate_.data_ptr.get())->intersectP(ray);
   return false;
 }
 
-Scene::Scene() {
+Scene::Scene() = default;
 
+Scene::~Scene() = default;
+
+HERMES_CUDA_KERNEL(updatePointers)(hermes::ArrayView<Light> a, hermes::StackAllocatorView m) {
+  HERMES_CUDA_THREAD_INDEX_I
+  a[i].data_ptr.update(m);
 }
 
-Scene::~Scene() {
+HERMES_CUDA_KERNEL(updatePointers)(hermes::ArrayView<Shape> a, hermes::StackAllocatorView m) {
+  HERMES_CUDA_THREAD_INDEX_I
+  a[i].data_ptr.update(m);
+}
 
+HERMES_CUDA_KERNEL(updatePointers)(hermes::ArrayView<Primitive> a, hermes::StackAllocatorView m) {
+  HERMES_CUDA_THREAD_INDEX_I
+  a[i].data_ptr.update(m);
+  CAST_PRIMITIVE(a[i], ptr,
+                 ptr->shape.data_ptr.update(m);)
+}
+
+HeResult Scene::prepare() {
+  // chose default struct if none
+  if (!aggregate_.data_ptr.get()) {
+    aggregate_ = {
+        .data_ptr = mem::allocate<ListAggregate>(),
+        .type = AggregateType::LIST
+    };
+    aggregate_view_ = {
+        .data_ptr = mem::allocate<ListAggregate::View>(),
+        .type = AggregateType::LIST
+    };
+  }
+
+  // send data to gpu
+  d_lights_ = lights_;
+  d_shapes_ = shapes_;
+  d_primitives_ = primitives_;
+
+  // setup acceleration structure
+  reinterpret_cast<ListAggregate *>(aggregate_.data_ptr.get())->init(primitives_, d_primitives_.constView());
+  *reinterpret_cast<ListAggregate::View *>(aggregate_view_.data_ptr.get()) =
+      reinterpret_cast<ListAggregate *>(aggregate_.data_ptr.get())->view();
+
+  // send resources memory to gpu
+  mem::sendToGPU();
+
+  // update pointers
+  HERMES_CUDA_LAUNCH_AND_SYNC((d_lights_.size()), updatePointers_k, d_lights_.view(), mem::gpuView());
+  HERMES_CUDA_LAUNCH_AND_SYNC((d_shapes_.size()), updatePointers_k, d_shapes_.view(), mem::gpuView());
+  HERMES_CUDA_LAUNCH_AND_SYNC((d_primitives_.size()), updatePointers_k, d_primitives_.view(), mem::gpuView());
+  aggregate_.data_ptr.update(mem::gpuView());
+  aggregate_view_.data_ptr.update(mem::gpuView());
+
+  return HeResult::SUCCESS;
 }
 
 Scene::View Scene::view() const {
-  return View(aggregate_, world_bounds_, lights_.view());
-}
-
-void Scene::setAggregate(const Aggregate &aggregate) {
-  aggregate_ = aggregate;
-}
-
-void Scene::setLights(const hermes::Array<Light> &lights) {
-  lights_ = lights;
+  return View(aggregate_view_, d_lights_.view(), d_primitives_.view(), d_shapes_.view());
 }
 
 }

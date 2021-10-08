@@ -1,9 +1,10 @@
 set(SOURCES
         main.cu
+        accel_tests.cu
         common_tests.cu
         core_tests.cu
         geometry_tests.cu
-#        integrators_tests.cu
+        renderers_tests.cu
         sampling_tests.cu
         shape_tests.cu
         )

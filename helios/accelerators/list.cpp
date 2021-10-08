@@ -26,28 +26,22 @@
 ///\brief
 
 #include <helios/accelerators/list.h>
-#include <helios/shapes/sphere.h>
 #include <helios/shapes/intersection.h>
+#include <helios/shapes/shapes.h>
 
 namespace helios {
 
-#define CAST_SHAPE(C) reinterpret_cast<C*>(shape.value.primitive_data)
+ListAggregate::View::View() = default;
 
-#define INTERSECT_P_SHAPE(C) CAST_SHAPE(C)->intersectP(shape.value, ray, false)
-
-ListAggregate::View::View(const hermes::ConstArrayView<Shape> &shapes, const bounds3 &world_bounds)
-    : shapes_(shapes), world_bounds_(world_bounds) {}
+ListAggregate::View::View(const hermes::ConstArrayView<Primitive> &primitives, const bounds3 &world_bounds)
+    : primitives_(primitives), world_bounds_(world_bounds) {
+}
 
 HERMES_DEVICE_CALLABLE const helios::bounds3 &ListAggregate::View::worldBound() const {
   return world_bounds_;
 }
 
 HERMES_DEVICE_CALLABLE bool ListAggregate::View::intersect(const Ray &ray, SurfaceInteraction *isect) const {
-#define SHAPE_CASE(E, C) case ShapeType::E:  \
-if(INTERSECT_P_SHAPE(C))  \
-  intersected = CAST_SHAPE(C)->intersect(&shape.value, ray, &cur_hit, &local_isect, false); \
- break;
-
   real_t t_min, t_max;
 
   if (!intersection::intersectP(world_bounds_, ray, &t_min, &t_max))
@@ -57,62 +51,59 @@ if(INTERSECT_P_SHAPE(C))  \
   bool intersected = false;
   real_t min_hit = hermes::Constants::real_infinity;
   real_t cur_hit = 0;
-  for (const auto &shape : shapes_) {
-    switch (shape.value.type) {
-    SHAPE_CASE(SPHERE, Sphere)
-    case ShapeType::MESH:break;
-    case ShapeType::CUSTOM:break;
-    }
-    if (intersected && cur_hit < min_hit) {
+  for (const auto &primitive : primitives_) {
+
+    CAST_PRIMITIVE(primitive.value, primitive_ptr,
+                   intersected = primitive_ptr->intersect(ray, &local_isect);
+    );
+
+    if (intersected) {// && cur_hit < min_hit) {
       *isect = local_isect;
       min_hit = cur_hit;
     }
   }
   return intersected;
-#undef SHAPE_CASE
 }
 
 HERMES_DEVICE_CALLABLE bool ListAggregate::View::intersectP(const Ray &ray) const {
-#define SHAPE_CASE(E, C) case ShapeType::E: intersected = INTERSECT_P_SHAPE(C); break;
-
   bool intersected = false;
-  for (auto shape : shapes_) {
-    switch (shape.value.type) {
-    SHAPE_CASE(SPHERE, Sphere)
-    case ShapeType::MESH:break;
-    case ShapeType::CUSTOM:break;
-    }
+  for (const auto &primitive : primitives_) {
+    CAST_PRIMITIVE(primitive.value, primitive_ptr,
+                   intersected = primitive_ptr->intersectP(ray);
+    );
     if (intersected)
       return true;
   }
   return intersected;
-#undef SHAPE_CASE
 }
 
-ListAggregate::ListAggregate(const hermes::Array<Shape> &shapes) {
-  shapes_ = shapes;
-  // compute world bounds
-  for (const auto &shape : shapes)
-    world_bounds_ = hermes::make_union(world_bounds_, shape.value.bounds);
-  // transfer data to device
-  d_data_.resize(sizeof(ListAggregate::View));
-  auto v = view();
-  d_data_.copy(&v, 0, hermes::MemoryLocation::HOST);
+ListAggregate::View &ListAggregate::View::operator=(const ListAggregate::View &other) {
+  if (&other != this) {
+    primitives_ = other.primitives_;
+    world_bounds_ = other.world_bounds_;
+  }
+  return *this;
 }
+
+ListAggregate::ListAggregate() = default;
 
 ListAggregate::~ListAggregate() = default;
 
+HeResult ListAggregate::init(const std::vector<Primitive> &primitives,
+                             hermes::ConstArrayView<Primitive> d_primitives) {
+  d_primitives_ = d_primitives;
+  // compute world bounds
+  for (const auto &primitive : primitives) CAST_PRIMITIVE(primitive, primitive_ptr,
+                                                          world_bounds_ = hermes::make_union(world_bounds_,
+                                                                                             primitive_ptr->worldBounds());
+  );
+  hermes::Log::info("Initializing Accelerator Struct (ListAggregate)");
+  hermes::Log::info("... with scene bounds: {}", world_bounds_);
+  return HeResult::SUCCESS;
+}
+
 ListAggregate::View ListAggregate::view() {
-  return ListAggregate::View(shapes_.constView(), world_bounds_);
+  return ListAggregate::View(d_primitives_, world_bounds_);
 }
-
-Aggregate ListAggregate::handle() {
-  return {
-      .aggregate = d_data_.ptr(),
-      .type = AggregateType::LIST
-  };
-}
-
-#undef CAST_SHAPE
 
 }

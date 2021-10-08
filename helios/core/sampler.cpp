@@ -227,14 +227,14 @@ ponos::point2 GlobalSampler::get2D() {
 //   for (uint32 i : n2D)
 //     totalSamples += i;
 //   // Allocate storage for sample values
-//   float *mem = ponos::allocAligned<float>(totalSamples);
+//   float *memory = ponos::allocAligned<float>(totalSamples);
 //   for (uint32 i = 0; i < n1D.size(); i++) {
-//     oneD[i] = mem;
-//     mem += n1D[i];
+//     oneD[i] = memory;
+//     memory += n1D[i];
 //   }
 //   for (uint32 i = 0; i < n2D.size(); i++) {
-//     twoD[i] = mem;
-//     mem += n2D[i];
+//     twoD[i] = memory;
+//     memory += n2D[i];
 //   }
 // }
 

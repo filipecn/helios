@@ -31,7 +31,7 @@
 #include <helios/geometry/bounds.h>
 #include <helios/core/interaction.h>
 #include <hermes/storage/array.h>
-#include <helios/core/shape.h>
+#include <helios/core/primitive.h>
 #include <helios/core/aggregate.h>
 
 namespace helios {
@@ -41,6 +41,8 @@ public:
   class View {
     friend class ListAggregate;
   public:
+    View();
+    View& operator=(const View& other);
     /// \return
     [[nodiscard]] HERMES_DEVICE_CALLABLE const bounds3 &worldBound() const;
     /// \param ray
@@ -51,26 +53,25 @@ public:
     /// \return
     [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Ray &ray) const;
   private:
-    explicit View(const hermes::ConstArrayView<Shape> &shapes, const bounds3 &world_bounds);
-    hermes::ConstArrayView<Shape> shapes_;
+    explicit View(const hermes::ConstArrayView<Primitive> &primitives, const bounds3 &world_bounds);
+    hermes::ConstArrayView<Primitive> primitives_;
     bounds3 world_bounds_;
   };
   // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
   // *******************************************************************************************************************
-  explicit ListAggregate(const hermes::Array<Shape> &shapes);
+  ListAggregate();
   ~ListAggregate();
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
-  Aggregate handle();
+  HeResult init(const std::vector<Primitive> &primitives, hermes::ConstArrayView<Primitive> d_primitives);
   View view();
 
 private:
-  hermes::DeviceMemory d_data_;
-  hermes::DeviceArray<Shape> shapes_;
+  hermes::ConstArrayView<Primitive> primitives_;
+  hermes::ConstArrayView<Primitive> d_primitives_;
   bounds3 world_bounds_;
-
 };
 
 }

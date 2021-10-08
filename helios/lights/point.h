@@ -30,6 +30,7 @@
 
 #include <helios/core/spectrum.h>
 #include <helios/core/light.h>
+#include <helios/core/mem.h>
 
 namespace helios {
 
@@ -42,7 +43,11 @@ public:
   // *******************************************************************************************************************
   //                                                                                                   STATIC METHODS
   // *******************************************************************************************************************
-  static Light createLight(const hermes::Transform &l2w);
+  ///
+  /// \param l2w
+  /// \param data_ptr
+  /// \return
+  static Light createLight(const hermes::point3 &world_position, mem::Ptr data_ptr);
   // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
   // *******************************************************************************************************************

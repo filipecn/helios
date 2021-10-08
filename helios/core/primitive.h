@@ -36,17 +36,31 @@ enum class PrimitiveType {
   CUSTOM
 };
 
+class GeometricPrimitive;
+
 // Base data for primitives
 struct Primitive {
   PrimitiveType type{PrimitiveType::GEOMETRIC_PRIMITIVE};
-  void *primitive_data{nullptr};
+  mem::Ptr data_ptr;
 };
 
+// *********************************************************************************************************************
+//                                                                                                Geometric Primitive
+// *********************************************************************************************************************
 /// A primitive is a simple scene element which can interact with light
 /// and compute intersections with other elements. It is the bridge between the
 /// geometry and shading.
 class GeometricPrimitive {
 public:
+// *********************************************************************************************************************
+//                                                                                                     STATIC METHODS
+// *********************************************************************************************************************
+  static Primitive createPrimitive(mem::Ptr data_ptr);
+  static Primitive createPrimitive(const Shape *shape);
+// *********************************************************************************************************************
+//                                                                                                            METHODS
+// *********************************************************************************************************************
+  explicit GeometricPrimitive(const Shape &shape);
   /// \return world space bounds
   [[nodiscard]] HERMES_DEVICE_CALLABLE bounds3 worldBounds() const;
   /// Computes intersection of primitive with ray
@@ -74,12 +88,27 @@ public:
 //  HERMES_DEVICE_CALLABLE void computeScatteringFunctions(SurfaceInteraction *isect,
 //                                                         ponos::MemoryArena &arena /*, TransportMode mode*/,
 //                                                         bool allowMultipleLobes) const;
-private:
-  Shape *shape_;
+  Shape shape;
   // TODO std::shared_ptr<Material> material_;
   // TODO std::shared_ptr<AreaLight> areaLight_;
   // TODO MediumInterface mediumInterface;
 };
+
+#define CAST_PRIMITIVE(PRIMITIVE, PTR, CODE)                                                                        \
+{                                                                                                                   \
+  switch(PRIMITIVE.type) {                                                                                          \
+    case PrimitiveType::GEOMETRIC_PRIMITIVE: {                                                                      \
+        auto * PTR = (GeometricPrimitive*)PRIMITIVE.data_ptr.get(); CODE break; }                                   \
+  }                                                                                                                 \
+}
+
+#define CAST_CONST_PRIMITIVE(PRIMITIVE, PTR, CODE)                                                                  \
+{                                                                                                                   \
+  switch(PRIMITIVE.type) {                                                                                          \
+    case PrimitiveType::GEOMETRIC_PRIMITIVE: {                                                                      \
+        auto * PTR = (const GeometricPrimitive*)PRIMITIVE.data_ptr.get(); CODE break; }                             \
+  }                                                                                                                 \
+}
 
 } // namespace helios
 

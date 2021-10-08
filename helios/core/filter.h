@@ -42,7 +42,7 @@ public:
   //                                                                                                     CONSTRUCTORS
   // *******************************************************************************************************************
   HERMES_DEVICE_CALLABLE Filter();
-  ///  The components of **radius** define points in the axis where the function
+  ///  The components of **radius_** define points in the axis where the function
   ///  is zero beyond. These points go to each direction, the overall extent
   ///  in each direction  (called support) is **twice** those values.
   /// \param radius filter extents
@@ -54,8 +54,8 @@ public:
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
-  const hermes::vec2 radius{};        //!< filter's radius of support
-  const hermes::vec2 inv_radius{};    //!< reciprocal of radius
+  const hermes::vec2 radius{};        //!< filter's radius_ of support
+  const hermes::vec2 inv_radius{};    //!< reciprocal of radius_
 };
 
 // *********************************************************************************************************************
@@ -87,8 +87,8 @@ public:
   real_t table[TABLE_WIDTH * TABLE_WIDTH]{};                //!< precomputed table for filter values
   //!<                                                           to save computations of filter's
   //!<                                                           evaluate method. f = f(|x|, |y|)
-  const hermes::vec2 radius;                                //!< filter's radius of support
-  const hermes::vec2 inv_radius;                            //!< reciprocal of radius
+  const hermes::vec2 radius;                                //!< filter's radius_ of support
+  const hermes::vec2 inv_radius;                            //!< reciprocal of radius_
 };
 
 // *********************************************************************************************************************

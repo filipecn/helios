@@ -33,6 +33,7 @@
 #include <helios/geometry/ray.h>
 #include <helios/core/interaction.h>
 #include <helios/geometry/transform.h>
+#include <helios/core/mem.h>
 
 #include <memory>
 #include <vector>
@@ -71,7 +72,7 @@ struct Shape {
   hermes::Transform o2w;                 //!< object space to world space transform
   hermes::Transform w2o;                 //!< world space to object space transform
   hermes::bbox3 bounds;                  //!< world space bounds
-  void *primitive_data{nullptr};         //!<
+  mem::Ptr data_ptr;                     //!<
   ShapeType type{ShapeType::CUSTOM};     //!<
   shape_flags flags{shape_flags::NONE};  //!<
 };

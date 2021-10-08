@@ -51,7 +51,7 @@ public:
     if (!scene.intersect(ray.ray, &isect)) {
       for (const auto &light : scene.lights) {
         if (light.value.type == LightType::POINT)
-          L += reinterpret_cast<PointLight *>(light.value.light_data)->Le(ray);
+          L += reinterpret_cast<const PointLight *>(light.value.data_ptr.get())->Le(ray);
       }
       return L;
     }

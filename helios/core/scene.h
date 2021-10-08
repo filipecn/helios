@@ -32,7 +32,9 @@
 #include <helios/core/light.h>
 #include <helios/geometry/bounds.h>
 #include <helios/core/aggregate.h>
+#include <helios/accelerators/list.h>
 #include <hermes/storage/array.h>
+#include "primitive.h"
 
 namespace helios {
 
@@ -56,13 +58,18 @@ public:
     //  HERMES_DEVICE_CALLABLE bool intersectTr(Ray ray,
     //  Sampler &sampler, SurfaceInteraction *isect, Spectrum *transmittance) const;
     hermes::ConstArrayView<Light> lights;
+    hermes::ConstArrayView<Primitive> primitives;
+    hermes::ConstArrayView<Shape> shapes;
   private:
-    View(const Aggregate &aggregate, const bounds3 &world_bounds, const hermes::ConstArrayView<Light> &lights)
-        : aggregate_{aggregate},
-          world_bounds_(world_bounds),
-          lights(lights) {}
+    View(const Aggregate &aggregate,
+         const hermes::ConstArrayView<Light> &lights,
+         const hermes::ConstArrayView<Primitive> primitives,
+         const hermes::ConstArrayView<Shape> shapes)
+        : lights(lights),
+          shapes(shapes),
+          primitives(primitives),
+          aggregate_{aggregate} {}
     Aggregate aggregate_;
-    bounds3 world_bounds_;
   };
   // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
@@ -72,16 +79,57 @@ public:
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
+  //                                                                                                       gpu access
+  HeResult prepare();
+  ///
+  /// \return
   View view() const;
-  void setAggregate(const Aggregate &aggregate);
-  void setLights(const hermes::Array<Light> &lights);
-  // *******************************************************************************************************************
-  //                                                                                                    PUBLIC FIELDS
-  // *******************************************************************************************************************
+  ///
+  /// \param aggregate
+  template<class A, class... P>
+  void setAggregate(P &&... params) {
+    if (std::is_same_v<A, ListAggregate>)
+      aggregate_.type = AggregateType::LIST;
+    aggregate_.data_ptr = mem::allocate<A>(std::forward<P>(params)...);
+  }
+  //                                                                                                   scene elements
+  /// \tparam P
+  /// \param params
+  /// \return
+  template<class... P>
+  Light *addLight(P &&... params) {
+    lights_.emplace_back(std::forward<P>(params)...);
+    return &lights_[lights_.size() - 1];
+  }
+  /// \tparam P
+  /// \param params
+  /// \return
+  template<class... P>
+  Shape *addShape(P &&... params) {
+    shapes_.emplace_back(std::forward<P>(params)...);
+    return &shapes_[shapes_.size() - 1];
+  }
+  /// \tparam P
+  /// \param params
+  /// \return
+  template<class... P>
+  Primitive *addPrimitive(P &&... params) {
+    primitives_.emplace_back(std::forward<P>(params)...);
+    return &primitives_[primitives_.size() - 1];
+  }
+
 private:
-  hermes::DeviceArray<Light> lights_;
+  // CPU scene elements
+  std::vector<Light> lights_;
+  std::vector<Shape> shapes_;
+  std::vector<Primitive> primitives_;
+  // GPU scene elements
+  hermes::DeviceArray<Light> d_lights_;
+  hermes::DeviceArray<Shape> d_shapes_;
+  hermes::DeviceArray<Primitive> d_primitives_;
+  // Acceleration struct
   Aggregate aggregate_;
-  bounds3 world_bounds_;
+  Aggregate aggregate_view_;
 };
 
 }

@@ -30,6 +30,7 @@
 
 #include <helios/common/bitmask_operators.h>
 #include <helios/geometry/transform.h>
+#include <helios/core/mem.h>
 
 namespace helios {
 
@@ -61,7 +62,7 @@ struct Light {
   hermes::Transform light2world;         //!< light to world space transform
   hermes::Transform world2light;         //!< world to light space transform
   LightType type{LightType::POINT};      //!< light type enum
-  void *light_data{nullptr};             //!< reference to light type data
+  mem::Ptr data_ptr;                     //!< reference to light type data
   int n_samples{1};                      //!< used for area light sources
   LightFlags flags{LightFlags::NONE};    //!< indicates the light source type
 };

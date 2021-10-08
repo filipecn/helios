@@ -43,7 +43,8 @@ public:
   // *******************************************************************************************************************
   //                                                                                                   STATIC METHODS
   // *******************************************************************************************************************
-  static Shape createShape(const Sphere &sphere, const hermes::Transform &o2w);
+  static Shape createShape(const hermes::Transform &o2w, mem::Ptr data_ptr);
+  static Shape createShape(mem::Ptr data_ptr, const hermes::point3 &center, real_t radius = 1.);
   HERMES_DEVICE_CALLABLE static Sphere unitSphere() {
     return Sphere(1, -1, 1, hermes::Constants::two_pi);
   }
@@ -73,9 +74,13 @@ public:
   /// \param r
   /// \param test_alpha_texture
   /// \return
-  [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Shape &shape, const Ray &r, bool test_alpha_texture) const;
+  [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Shape *shape, const Ray &r, bool test_alpha_texture) const;
+  // *******************************************************************************************************************
+  //                                                                                                          METHODS
+  // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE real_t radius() const;
 private:
-  real_t radius;
+  real_t radius_;
   real_t zmin, zmax;
   real_t theta_min, theta_max, phi_max;
 };

@@ -31,16 +31,19 @@ using namespace hermes;
 
 namespace helios {
 
-Light PointLight::createLight(const hermes::Transform &l2w) {
+Light PointLight::createLight(const hermes::point3 &world_position, mem::Ptr data_ptr) {
+  const auto l2w = hermes::Transform::translate(hermes::vec3(world_position));
   return {
       .light2world = l2w,
       .world2light = inverse(l2w),
       .type = LightType::POINT,
-      .light_data = nullptr,
+      .data_ptr = data_ptr,
       .n_samples = 1,
       .flags =LightFlags::DELTA_POSITION
   };
 }
+
+PointLight::PointLight() = default;
 
 PointLight::PointLight(const Light &light, const Spectrum &I) : p_light_(light.light2world(point3())), I_(I) {}
 

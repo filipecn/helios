@@ -19,34 +19,53 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file integrators_tests.cu
+///\file mem.cpp
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-07-15
+///\date 2021-10-04
 ///
 ///\brief
 
-#include <catch2/catch.hpp>
+#include <helios/core/mem.h>
 
-#include <helios/cameras/perspective_camera.h>
-#include <hermes/storage/array.h>
+namespace helios {
 
-using namespace helios;
-using namespace hermes;
+mem::Ptr::Ptr() = default;
 
-TEST_CASE("SamplerRenderer") {
-  SECTION("sanity") {
-    // setup film
-    BoxFilter filter({1, 1});
-    Film film({16, 16}, &filter, 10);
-    // setup camera
-    range2 screen_window(size2(16, 16));
-    UnifiedArray<PerspectiveCamera> camera_m(1);
-    camera_m[0] = PerspectiveCamera(AnimatedTransform(),
-                                    screen_window, film.full_resolution,
-                                    0, 1, 10, 1, 45);
-    // setup integrator
-    SamplerRenderer integrator(range2(size2(16, 16)));
-    // run
-//    integrator.render(camera_m[0].handle(), film);
-  }//
+mem::Ptr::Ptr(hermes::AddressIndex address_index) : address_index(address_index) {
+  update();
+}
+
+HERMES_DEVICE_CALLABLE void *mem::Ptr::get() {
+  return ptr;
+}
+
+HERMES_DEVICE_CALLABLE const void *mem::Ptr::get() const {
+  return ptr;
+}
+
+void mem::Ptr::update() {
+  ptr = mem::get<void>(*this);
+}
+
+HERMES_DEVICE_CALLABLE void mem::Ptr::update(hermes::StackAllocatorView m) {
+  ptr = m.get<void>(address_index);
+}
+
+HeResult mem::init(std::size_t size_in_bytes) {
+  return mem::get().allocator_.resize(size_in_bytes);
+}
+
+HeResult mem::sendToGPU() {
+  mem::get().d_allocator_ = mem::get().allocator_;
+  return HeResult::SUCCESS;
+}
+
+hermes::StackAllocatorView mem::gpuView() {
+  return mem::get().d_allocator_.view();
+}
+
+std::size_t mem::availableSize() {
+  return mem::get().allocator_.availableSizeInBytes();
+}
+
 }

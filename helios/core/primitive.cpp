@@ -23,31 +23,40 @@
  */
 
 #include <helios/core/primitive.h>
-#include <helios/shapes/sphere.h>
+#include <helios/shapes/shapes.h>
 
 namespace helios {
 
-#define CAST_SHAPE(C) reinterpret_cast<C*>(shape_->primitive_data)
+Primitive GeometricPrimitive::createPrimitive(mem::Ptr data_ptr) {
+  return {
+      .type = PrimitiveType::GEOMETRIC_PRIMITIVE,
+      .data_ptr = data_ptr
+  };
+}
 
-#define INTERSECT_P_SHAPE(C) CAST_SHAPE(C)->intersectP(*shape_, ray, false)
+Primitive GeometricPrimitive::createPrimitive(const Shape* shape) {
+  auto geo_prim_data = mem::allocate<GeometricPrimitive>(*shape);
+  return {
+      .type = PrimitiveType::GEOMETRIC_PRIMITIVE,
+      .data_ptr = geo_prim_data
+  };
+}
+
+GeometricPrimitive::GeometricPrimitive(const Shape &shape) : shape(shape) {}
 
 HERMES_DEVICE_CALLABLE bounds3 GeometricPrimitive::worldBounds() const {
-  return shape_->bounds;
+  return shape.bounds;
 }
 
 HERMES_DEVICE_CALLABLE bool GeometricPrimitive::intersect(const Ray &ray, SurfaceInteraction *si) const {
-#define SHAPE_CASE(E, C) case ShapeType::E:  \
-if(INTERSECT_P_SHAPE(C))  \
-  intersected = CAST_SHAPE(C)->intersect(shape_, ray, &cur_hit, si, false); \
- break;
-
   bool intersected = false;
   real_t cur_hit = 0;
-  switch (shape_->type) {
-  SHAPE_CASE(SPHERE, Sphere)
-  case ShapeType::MESH:break;
-  case ShapeType::CUSTOM:break;
-  }
+
+  CAST_CONST_SHAPE(shape, shape_ptr,
+             if (shape_ptr->intersectP(&shape, ray, false))
+               intersected = shape_ptr->intersect(&shape, ray, &cur_hit, si, false);
+  );
+
   if (!intersected)
     return false;
   ray.max_t = cur_hit;
@@ -55,21 +64,16 @@ if(INTERSECT_P_SHAPE(C))  \
   // CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
   // TODO handle medium
   return true;
-#undef SHAPE_CASE
 }
 
 HERMES_DEVICE_CALLABLE bool GeometricPrimitive::intersectP(const Ray &ray) const {
-#define SHAPE_CASE(E, C) case ShapeType::E: intersected = INTERSECT_P_SHAPE(C); break;
   bool intersected = false;
-  switch (shape_->type) {
-  SHAPE_CASE(SPHERE, Sphere)
-  case ShapeType::MESH:break;
-  case ShapeType::CUSTOM:break;
-  }
-  return intersected;
-#undef SHAPE_CAS
-}
 
-#undef CAST_SHAPE
+  CAST_SHAPE(shape, shape_ptr,
+             intersected = shape_ptr->intersectP(&shape, ray, false);
+  );
+
+  return intersected;
+}
 
 } // namespace helios

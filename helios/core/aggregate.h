@@ -25,6 +25,8 @@
 #ifndef HELIOS_CORE_AGGREGATE_H
 #define HELIOS_CORE_AGGREGATE_H
 
+#include <helios/core/mem.h>
+
 namespace helios {
 
 enum class AggregateType {
@@ -34,7 +36,7 @@ enum class AggregateType {
 
 ///
 struct Aggregate {
-  void *aggregate{nullptr};
+  mem::Ptr data_ptr;
   AggregateType type{AggregateType::CUSTOM};
 };
 

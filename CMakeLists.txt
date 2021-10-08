@@ -58,6 +58,7 @@ set(HEADERS
         helios/common/bitmask_operators.h
         helios/common/io.h
         helios/common/globals.h
+        helios/common/result.h
         helios/cameras/perspective_camera.h
         helios/core/aggregate.h
         helios/core/camera.h
@@ -65,6 +66,7 @@ set(HEADERS
         helios/core/filter.h
         helios/core/interaction.h
         helios/core/light.h
+        helios/core/mem.h
         helios/core/primitive.h
         helios/core/renderer.cuh
         #        helios/core/sampler.h
@@ -83,6 +85,7 @@ set(HEADERS
         helios/samplers/sample_pool.h
         helios/samplers/stratified_sampler.h
         helios/shapes/intersection.h
+        helios/shapes/shapes.h
         helios/shapes/sphere.h
         )
 
@@ -96,6 +99,7 @@ set(SOURCES
         helios/core/filter.cpp
         helios/core/interaction.cpp
         helios/core/light.cpp
+        helios/core/mem.cpp
         helios/core/primitive.cpp
         #        helios/core/sampler.cpp
         helios/core/sampling.cpp

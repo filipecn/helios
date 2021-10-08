@@ -15,7 +15,7 @@ public:
   /// \param screenWindow screen space extent of the image
   /// \param sopen shutter open time
   /// \param sclose shutter close time
-  /// \param lensr lens radius
+  /// \param lensr lens radius_
   /// \param focald focal distance
   /// \param fov field of view
   /// \param film

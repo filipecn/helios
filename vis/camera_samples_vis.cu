@@ -39,37 +39,23 @@
 #include <helios/lights/point.h>
 
 using namespace helios;
-using namespace hermes;
 
 struct CameraSamplesVis : public circe::gl::BaseApp {
   CameraSamplesVis() : BaseApp(800, 800) {
     //                                                                                                    setup scene
-    // setup lights
-    hermes::Array<Light> lights(1);
-    lights[0] = PointLight::createLight(hermes::Transform());
-    hermes::Array<PointLight> point_lights(1);
-    point_lights[0] = PointLight(lights[0], Spectrum(0.5));
-    hermes::DeviceArray<PointLight> dp_lights = point_lights;
-    lights[0].light_data = dp_lights.data();
 
-    // setup scene objects
-    hermes::Array<helios::Sphere> spheres(1);
-    spheres[0] = helios::Sphere::unitSphere();
-    hermes::DeviceArray<helios::Sphere> d_spheres = spheres;
-    hermes::Array<helios::Shape> shapes(1);
-    shapes[0] = helios::Sphere::createShape(spheres[0],
-                                            hermes::Transform::translate({0, 0, 5}));
-    shapes[0].primitive_data = d_spheres.data();
-    // setup aggregate
-    ListAggregate list(shapes);
-    // setup scene object
+    mem::init(2048);
+    // setup resources
+    auto point_light_data = mem::allocate<PointLight>();
+    auto sphere_shape_data = mem::allocate<Sphere>(Sphere::unitSphere());
+    // setup scene
     Scene scene;
-    scene.setAggregate(list.handle());
-    scene.setLights(lights);
-
+    scene.addLight(PointLight::createLight({-10, 0, 0}, point_light_data));
+    auto sphere_shape = scene.addShape(Sphere::createShape(sphere_shape_data, {0, 0, 5}));
+    scene.addPrimitive(GeometricPrimitive::createPrimitive(sphere_shape));
+    scene.prepare();
     // image resolution
-    size2 res(1024, 1024);
-
+    hermes::size2 res(1024, 1024);
     // setup film_image
     BoxFilter filter({1, 1});
     FilmImage film_image(Film(res, &filter, 10));
@@ -77,10 +63,9 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
     PerspectiveCamera camera(AnimatedTransform(),
                              {{-1, -1}, {1, 1}}, film_image.film().full_resolution,
                              0, 1, 0, 1, 45);
-
     // setup renderer
     WhittedIntegrator integrator;
-    SamplerRenderer renderer((range2(res)));
+    SamplerRenderer renderer((hermes::range2(res)));
     // run
     renderer.render(camera, film_image, integrator, scene.view());
     // image
@@ -92,11 +77,12 @@ struct CameraSamplesVis : public circe::gl::BaseApp {
 
     exit(0);
     {// dump camera
-      MemoryDumper::dump(&camera,
-                         1,
-                         16,
-                         PerspectiveCamera::memoryDumpLayout(),
-                         memory_dumper_options::type_values | memory_dumper_options::colored_output);
+      hermes::MemoryDumper::dump(&camera,
+                                 1,
+                                 16,
+                                 PerspectiveCamera::memoryDumpLayout(),
+                                 hermes::memory_dumper_options::type_values
+                                     | hermes::memory_dumper_options::colored_output);
     }
 
 #ifdef HELIOS_DEBUG_DATA

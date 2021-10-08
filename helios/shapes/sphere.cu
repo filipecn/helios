@@ -2,34 +2,42 @@
 #include <hermes/numeric/numeric.h>
 #include <hermes/numeric/e_float.h>
 #include <helios/geometry/utils.h>
+#include <helios/core/mem.h>
 
 using namespace hermes;
 
 namespace helios {
 
-Shape Sphere::createShape(const Sphere &sphere, const hermes::Transform &o2w) {
+Shape Sphere::createShape(const hermes::Transform &o2w, mem::Ptr data_ptr) {
+  const auto &sphere = *mem::get<Sphere>(data_ptr);
   return {
       .o2w = o2w,
       .w2o = inverse(o2w),
       .bounds = o2w(sphere.objectBound()),
-      .primitive_data = nullptr,
+      .data_ptr = data_ptr,
       .type = ShapeType::SPHERE,
       .flags = shape_flags::NONE
   };
 }
 
-HERMES_DEVICE_CALLABLE Sphere::Sphere(real_t rad, real_t z0, real_t z1, real_t pm) : radius{rad}, phi_max{pm} {
-  zmin = Numbers::clamp(fminf(z0, z1), -radius, radius);
-  radius = rad;
-  zmax = Numbers::clamp(fmaxf(z0, z1), -radius, radius);
-  theta_min = acosf(Numbers::clamp<real_t>(zmin / radius, -1, 1));
-  theta_max = acosf(Numbers::clamp<real_t>(zmin / radius, -1, 1));
+Shape Sphere::createShape(mem::Ptr data_ptr, const point3 &center, real_t radius) {
+  auto o2w = hermes::Transform::translate(hermes::vec3(center))
+      * hermes::Transform::scale(radius, radius, radius);
+  return createShape(o2w, data_ptr);
+}
+
+HERMES_DEVICE_CALLABLE Sphere::Sphere(real_t rad, real_t z0, real_t z1, real_t pm) : radius_{rad}, phi_max{pm} {
+  zmin = Numbers::clamp(fminf(z0, z1), -radius_, radius_);
+  radius_ = rad;
+  zmax = Numbers::clamp(fmaxf(z0, z1), -radius_, radius_);
+  theta_min = acosf(Numbers::clamp<real_t>(zmin / radius_, -1, 1));
+  theta_max = acosf(Numbers::clamp<real_t>(zmin / radius_, -1, 1));
   theta_max = Trigonometry::degrees2radians(Numbers::clamp<real_t>(pm, 0, 360));
 }
 
 HERMES_DEVICE_CALLABLE bbox3 Sphere::objectBound() const {
   // TODO use phi_max to compute a tighter bound
-  return bbox3(point3(-radius, -radius, zmin), point3(radius, radius, zmax));
+  return bbox3(point3(-radius_, -radius_, zmin), point3(radius_, radius_, zmax));
 }
 
 HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, real_t *tHit, SurfaceInteraction *isect,
@@ -45,7 +53,7 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, 
   // compute quadritic Sphere coefficients
   EFloat a = dx * dx + dy * dy + dz * dz;
   EFloat b = 2 * (dx * ox + dy * oy + dz * oz);
-  EFloat c = ox * ox + oy * oy + oz * oz - EFloat(radius) * EFloat(radius);
+  EFloat c = ox * ox + oy * oy + oz * oz - EFloat(radius_) * EFloat(radius_);
   // solve quadritic equation for t values
   EFloat t0, t1;
   if (!solve_quadratic(a, b, c, &t0, &t1))
@@ -62,14 +70,14 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, 
   // compute Sphere hit position and phi
   phit = ray((real_t) thit);
   // refine sphere intersection point
-  phit *= radius / distance(phit, point3());
+  phit *= radius_ / distance(phit, point3());
   if (phit.x == 0 && phit.y == 0)
-    phit.x = 1e-5f * radius;
+    phit.x = 1e-5f * radius_;
   phi = atan2(phit.y, phit.x);
   if (phi < 0.)
     phi += 2 * Constants::pi;
   // test Sphere intersection against clipping parameters
-  if ((zmin > -radius && phit.z < zmin) || (zmax < radius && phit.z > zmax) ||
+  if ((zmin > -radius_ && phit.z < zmin) || (zmax < radius_ && phit.z > zmax) ||
       phi > phi_max) {
     if (thit == t1)
       return false;
@@ -79,19 +87,19 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, 
     // compute Sphere hit position and phi
     phit = ray((real_t) thit);
     // refine sphere intersection point
-    phit *= radius / distance(phit, point3());
+    phit *= radius_ / distance(phit, point3());
     if (phit.x == 0 && phit.y == 0)
-      phit.x = 1e-5f * radius;
+      phit.x = 1e-5f * radius_;
     phi = atan2(phit.y, phit.x);
     if (phi < 0.)
       phi += 2 * Constants::pi;
-    if ((zmin > -radius && phit.z < zmin) || (zmax < radius && phit.z > zmax) ||
+    if ((zmin > -radius_ && phit.z < zmin) || (zmax < radius_ && phit.z > zmax) ||
         phi > phi_max)
       return false;
   }
   // find parametric representation of Sphere hit
   real_t u = phi / phi_max;
-  real_t theta = acosf(Numbers::clamp<real_t>(phit.z / radius, -1, 1));
+  real_t theta = acosf(Numbers::clamp<real_t>(phit.z / radius_, -1, 1));
   real_t v = (theta - theta_min) / (theta_max - theta_min);
   // compute Sphere dp/du and dp/dv
   real_t zradius = sqrt(phit.x * phit.x + phit.y * phit.y);
@@ -100,7 +108,7 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, 
   real_t sinphi = phit.y * invradius;
   vec3f dpdu(-phi_max * phit.y, phi_max * phit.x, 0);
   vec3f dpdv = (theta_max - theta_min) * vec3(phit.z * cosphi, phit.z * sinphi,
-                                              -radius * sin(theta));
+                                              -radius_ * sin(theta));
   // compute Sphere dn/du and dn/dv
   vec3 d2Pduu = -phi_max * phi_max * vec3f(phit.x, phit.y, 0);
   vec3 d2Pduv =
@@ -125,26 +133,26 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, 
   vec3f pError = Numbers::gamma(5) * abs((vec3f) phit);
   // initialize SurfaceInteraction from parametric information
   *isect = transform(shape->o2w, SurfaceInteraction(phit, pError, point2f(u, v),
-                                                   -ray.d, dpdu, dpdv, dndu, dndv,
-                                                   ray.time, shape));
+                                                    -ray.d, dpdu, dpdv, dndu, dndv,
+                                                    ray.time, shape));
   // update tHit for quadric intersection
   *tHit = (real_t) (thit);
   return true;
 }
 
-HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape &shape, const Ray &r, bool test_alpha_texture) const {
+HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape *shape, const Ray &r, bool test_alpha_texture) const {
   real_t phi;
   point3 phit;
   // transform HRay to object space
   vec3f oErr, dErr;
-  Ray ray = transform(shape.w2o, r, oErr, dErr);
+  Ray ray = transform(shape->w2o, r, oErr, dErr);
   //    initialize efloat ray coordinate valyes
   EFloat ox(ray.o.x, oErr.x), oy(ray.o.y, oErr.y), oz(ray.o.z, oErr.z);
   EFloat dx(ray.d.x, dErr.x), dy(ray.d.y, dErr.y), dz(ray.d.z, dErr.z);
   // compute quadritic Sphere coefficients
   EFloat a = dx * dx + dy * dy + dz * dz;
   EFloat b = 2 * (dx * ox + dy * oy + dz * oz);
-  EFloat c = ox * ox + oy * oy + oz * oz - EFloat(radius) * EFloat(radius);
+  EFloat c = ox * ox + oy * oy + oz * oz - EFloat(radius_) * EFloat(radius_);
   // solve quadritic equation for t values
   EFloat t0, t1;
   if (!solve_quadratic(a, b, c, &t0, &t1))
@@ -161,14 +169,14 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape &shape, const Ray &r,
   // compute Sphere hit position and phi
   phit = ray((real_t) thit);
   // refine sphere intersection point
-  phit *= radius / distance(phit, point3());
+  phit *= radius_ / distance(phit, point3());
   if (phit.x == 0 && phit.y == 0)
-    phit.x = 1e-5f * radius;
+    phit.x = 1e-5f * radius_;
   phi = atan2(phit.y, phit.x);
   if (phi < 0.)
     phi += 2 * Constants::pi;
   // test Sphere intersection against clipping parameters
-  if ((zmin > -radius && phit.z < zmin) || (zmax < radius && phit.z > zmax) ||
+  if ((zmin > -radius_ && phit.z < zmin) || (zmax < radius_ && phit.z > zmax) ||
       phi > phi_max) {
     if (thit == t1)
       return false;
@@ -178,13 +186,13 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape &shape, const Ray &r,
     // compute Sphere hit position and phi
     phit = ray((real_t) thit);
     // refine sphere intersection point
-    phit *= radius / distance(phit, point3());
+    phit *= radius_ / distance(phit, point3());
     if (phit.x == 0 && phit.y == 0)
-      phit.x = 1e-5f * radius;
+      phit.x = 1e-5f * radius_;
     phi = atan2(phit.y, phit.x);
     if (phi < 0.)
       phi += 2 * Constants::pi;
-    if ((zmin > -radius && phit.z < zmin) || (zmax < radius && phit.z > zmax) ||
+    if ((zmin > -radius_ && phit.z < zmin) || (zmax < radius_ && phit.z > zmax) ||
         phi > phi_max)
       return false;
   }
@@ -192,6 +200,10 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape &shape, const Ray &r,
   return true;
 }
 
-HERMES_DEVICE_CALLABLE real_t Sphere::surfaceArea() const { return phi_max * radius * (zmax - zmin); }
+HERMES_DEVICE_CALLABLE real_t Sphere::surfaceArea() const { return phi_max * radius_ * (zmax - zmin); }
+
+HERMES_DEVICE_CALLABLE real_t Sphere::radius() const {
+  return radius_;
+}
 
 } // namespace helios

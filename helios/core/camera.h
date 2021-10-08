@@ -82,7 +82,7 @@ struct ProjectiveCamera {
   /// \param cam2scr              camera to screen space transform
   /// \param screen_window        screen space extent of the film
   /// \param film_resolution      resolution of film in pixels
-  /// \param lensr                lens radius
+  /// \param lensr                lens radius_
   /// \param focald               focal distance
   ProjectiveCamera(const hermes::Transform &cam2scr, const hermes::bbox2 &screen_window,
                    const hermes::size2 &film_resolution,
