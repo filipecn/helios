@@ -19,29 +19,25 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file core/shape.h
+///\file shape_tests.cpp
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-07-01
+///\date 2021-08-19
 ///
 ///\brief
 
-#include <helios/core/shape.h>
+#include <catch2/catch.hpp>
 
-namespace helios {
+#include <helios/spectra.h>
 
-//uint32_t Shape::nextShapeId = 1;
-//
-//Shape::Shape(const hermes::Transform *o2w, const hermes::Transform *w2o, bool ro)
-//    : objectToWorld(o2w), worldToObject(w2o), reverse_orientation(ro),
-//      transform_swaps_handedness(o2w->swapsHandedness()), shape_id(nextShapeId++) {
-//}
-//
-//bounds3 Shape::worldBound() const { return (*objectToWorld)(objectBound()); }
-//
-//bool Shape::intersectP(const Ray &ray, bool test_alpha_texture) const {
-//  real_t tHit = ray.max_t;
-//  SurfaceInteraction isect;
-//  return intersect(ray, &tHit, &isect, test_alpha_texture);
-//}
+using namespace helios;
 
-} // namespace helios
+TEST_CASE("Spectrum") {
+  mem::init(1024);
+  SECTION("BlackBody") {
+    auto data = mem::allocate<BlackbodySpectrum>(300);
+    auto spec = BlackbodySpectrum::createSpectrum(data);
+    CAST_SPECTRUM(spec, ptr, /**/
+    )
+  }
+
+}

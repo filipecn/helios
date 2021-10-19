@@ -2,7 +2,7 @@
 
 #include <helios/lights/point.h>
 #include <helios/core/scene.h>
-#include <helios/shapes/shapes.h>
+#include <helios/shapes.h>
 #include <hermes/common/cuda_utils.h>
 
 using namespace helios;

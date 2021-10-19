@@ -24,8 +24,9 @@
  */
 #include <helios/common/globals.h>
 #include <helios/core/interaction.h>
-#include <helios/core/shape.h>
+#include <helios/base/shape.h>
 #include <helios/geometry/utils.h>
+#include <helios/materials.h>
 
 using namespace hermes;
 
@@ -62,22 +63,22 @@ HERMES_DEVICE_CALLABLE Ray Interaction::spawnRayTo(const Interaction &p2) const 
 HERMES_DEVICE_CALLABLE SurfaceInteraction::SurfaceInteraction(
     const point3 &point, const vec3 &pointError, const point2f &uv,
     const vec3 &outgoingDirection, const vec3 &dpdu, const vec3 &dpdv,
-    const normal3 &dndu, const normal3 &dndv, real_t t, const Shape *shape)
-    : interaction(Interaction(point, normal3(normalize(cross(dpdu, dpdv))), pointError,
-                              outgoingDirection, t)),
-      uv(uv), dpdu(dpdu), dpdv(dpdv), dndu(dndu), dndv(dndv), shape(shape) {
+    const normal3 &dndu, const normal3 &dndv, real_t t)
+    : Interaction(point, normal3(normalize(cross(dpdu, dpdv))), pointError,
+                              outgoingDirection, t),
+                              dpdu(dpdu), dpdv(dpdv), dndu(dndu), dndv(dndv) {
   // initialize shading geometry from true geometry
-  shading.n = interaction.n;
+  shading.n = n;
   shading.dpdu = dpdu;
   shading.dpdv = dpdv;
   shading.dndu = dndu;
   shading.dndv = dndv;
   // adjust normal based on orientation and handedness
-  if (shape && (HELIOS_MASK_BIT(shape->flags, shape_flags::REVERSE_ORIENTATION) ||
-      HELIOS_MASK_BIT(shape->flags, shape_flags::TRANSFORM_SWAP_HANDEDNESS))) {
-    interaction.n *= -1;
-    shading.n *= -1;
-  }
+//  if (shape && (HELIOS_MASK_BIT(shape->flags, shape_flags::REVERSE_ORIENTATION) ||
+//      HELIOS_MASK_BIT(shape->flags, shape_flags::TRANSFORM_SWAP_HANDEDNESS))) {
+//    interaction.n *= -1;
+//    shading.n *= -1;
+//  }
 }
 
 HERMES_DEVICE_CALLABLE void SurfaceInteraction::setShadingGeometry(const vec3 &dpdus,
@@ -88,9 +89,9 @@ HERMES_DEVICE_CALLABLE void SurfaceInteraction::setShadingGeometry(const vec3 &d
   // compute shading normal
   shading.n = normal3(normalize(cross(dpdus, dpdvs)));
   if (orientationIsAuthoritative)
-    interaction.n = faceForward(interaction.n, shading.n);
+    n = faceForward(n, shading.n);
   else
-    shading.n = faceForward(shading.n, interaction.n);
+    shading.n = faceForward(shading.n, n);
   shading.dpdu = dpdus;
   shading.dpdv = dpdvs;
   shading.dndu = dndus;
@@ -102,28 +103,28 @@ HERMES_DEVICE_CALLABLE void SurfaceInteraction::computeDifferentials(const RayDi
   dudy = dvdy = 0;
   dpdx = dpdy = vec3(0, 0, 0);
   // Compute auxiliary intersection points with plane
-  real_t d = dot(interaction.n, vec3(interaction.p));
+  real_t d = dot(n, vec3(p));
   real_t tx =
-      -(dot(interaction.n, vec3(ray.rx_origin)) - d) / dot(interaction.n, ray.rx_direction);
+      -(dot(n, vec3(ray.rx_origin)) - d) / dot(n, ray.rx_direction);
   if (isinf(tx) || isnan(tx))
     return;
   point3 px = ray.rx_origin + tx * ray.rx_direction;
   real_t ty =
-      -(dot(interaction.n, vec3(ray.ry_origin)) - d) / dot(interaction.n, ray.ry_direction);
+      -(dot(n, vec3(ray.ry_origin)) - d) / dot(n, ray.ry_direction);
   if (isinf(ty) || isnan(ty))
     return;
   point3 py = ray.ry_origin + ty * ray.ry_direction;
-  dpdx = px - interaction.p;
-  dpdy = py - interaction.p;
+  dpdx = px - p;
+  dpdy = py - p;
 
   // Compute $(u,v)$ offsets at auxiliary points
 
   // Choose two dimensions to use for ray offset computation
   int dim[2];
-  if (abs(interaction.n.x) > abs(interaction.n.y) && abs(interaction.n.x) > abs(interaction.n.z)) {
+  if (abs(n.x) > abs(n.y) && abs(n.x) > abs(n.z)) {
     dim[0] = 1;
     dim[1] = 2;
-  } else if (abs(interaction.n.y) > abs(interaction.n.z)) {
+  } else if (abs(n.y) > abs(n.z)) {
     dim[0] = 0;
     dim[1] = 2;
   } else {
@@ -134,22 +135,38 @@ HERMES_DEVICE_CALLABLE void SurfaceInteraction::computeDifferentials(const RayDi
   // Initialize _A_, _Bx_, and _By_ matrices for offset computation
   real_t A[2][2] = {{dpdu[dim[0]], dpdv[dim[0]]},
                     {dpdu[dim[1]], dpdv[dim[1]]}};
-  real_t Bx[2] = {px[dim[0]] - interaction.p[dim[0]], px[dim[1]] - interaction.p[dim[1]]};
-  real_t By[2] = {py[dim[0]] - interaction.p[dim[0]], py[dim[1]] - interaction.p[dim[1]]};
+  real_t Bx[2] = {px[dim[0]] - p[dim[0]], px[dim[1]] - p[dim[1]]};
+  real_t By[2] = {py[dim[0]] - p[dim[0]], py[dim[1]] - p[dim[1]]};
   if (!numeric::soveLinearSystem(A, Bx, &dudx, &dvdx))
     dudx = dvdx = 0;
   if (!numeric::soveLinearSystem(A, By, &dudy, &dvdy))
     dudy = dvdy = 0;
 }
 
-/*
-void SurfaceInteraction::computeScatteringFunctions(const RayDifferential &ray,
-                                                    ponos::MemoryArena &arena,
-                                                    bool allowMultipleLobes,
-                                                    TransportMode mode) {
+HERMES_DEVICE_CALLABLE BSDF SurfaceInteraction::bsdf(const RayDifferential &ray) {
+  // compute differentials for intersection
   computeDifferentials(ray);
-  primitive->computeScatteringFunctions(this, arena, mode, allowMultipleLobes);
+  // check if material exists
+  if (!material)
+    return {};
+  // TODO: normal & bump map
+  CAST_MATERIAL(material, material_ptr,
+
+  // construct bsdf from material
+//                using ConcreteMtl = typename std::remove_reference_t<decltype(*mtl)>;
+//                    using ConcreteBxDF = typename ConcreteMtl::BxDF;
+//                    if constexpr (std::is_same_v<ConcreteBxDF, void>)
+//                      return {};
+//                    else {
+//                      // Allocate memory for _ConcreteBxDF_ and return _BSDF_ for material
+//                      ConcreteBxDF *bxdf = scratchBuffer.Alloc<ConcreteBxDF>();
+//                      *bxdf = mtl->GetBxDF(texEval, ctx, lambda);
+//                      return BSDF(ctx.ns, ctx.dpdus, bxdf);
+//                    }
+//
+//                    return material_ptr->bsdf();
+  )
+  return {};
 }
-*/
 
 } // namespace helios

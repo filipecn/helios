@@ -19,24 +19,25 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file shape_tests.cpp
+///\file light.cpp
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-19
+///\date 2021-08-12
 ///
 ///\brief
 
-#include <catch2/catch.hpp>
+#include <helios/base/light.h>
 
-#include <helios/geometry/ray.h>
-#include <helios/shapes/sphere.h>
-#include <helios/base/shape.h>
-#include <helios/shapes/intersection.h>
+namespace helios {
 
-using namespace helios;
+HERMES_DEVICE_CALLABLE VisibilityTester::VisibilityTester(const Interaction &p0, const Interaction &p1) : p0{p0},
+                                                                                                          p1{p1} {
 
-TEST_CASE("bounds", "[geometry]") {
-  Ray ray({0, 0, 0}, {1, 0, 0});
-  bounds3 box{{2, -1, -1}, {4, 2, 2}};
-  real_t h0, h1;
-  REQUIRE(intersection::intersectP(box, ray, &h0, &h1));
+}
+
+HERMES_DEVICE_CALLABLE VisibilityTester::~VisibilityTester() {}
+
+HERMES_DEVICE_CALLABLE const Interaction &VisibilityTester::operator[](u32 p) const {
+  return (&p0)[p];
+}
+
 }

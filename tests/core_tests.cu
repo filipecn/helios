@@ -30,15 +30,16 @@
 #include <hermes/common/cuda_utils.h>
 #include <helios/shapes/sphere.h>
 #include <hermes/storage/array.h>
-#include <helios/core/spectrum.h>
+#include <helios/base/spectrum.h>
 #include <helios/core/film.h>
 #include <helios/core/scene.h>
 #include <hermes/storage/stack_allocator.h>
 #include <helios/lights/point.h>
 #include <helios/core/mem.h>
 #include <helios/core/scene.h>
-#include <helios/core/primitive.h>
-#include <helios/shapes/shapes.h>
+#include <helios/base/primitive.h>
+#include <helios/shapes.h>
+#include <helios/base/bxdf.h>
 
 using namespace helios;
 
@@ -87,8 +88,8 @@ TEST_CASE("film") {
   REQUIRE(film.physicalExtent().extends().length() == Approx(0.01));
 }
 
-TEST_CASE("Spectrum", "[core]") {
-  Spectrum s;
+TEST_CASE("SpectrumOld", "[core]") {
+  SpectrumOld s;
   REQUIRE(s.isBlack());
 }
 
@@ -187,4 +188,10 @@ TEST_CASE("Scene") {
   hermes::UnifiedArray<bool> result(1);
   HERMES_CUDA_LAUNCH_AND_SYNC((1), checkSceneElements_k, result.data(), scene.view())
   REQUIRE(result[0]);
+}
+
+TEST_CASE("Reflection Functions") {
+  SECTION("BxDF") {
+    BxDF bxdf;
+  }
 }

@@ -1,13 +1,62 @@
+/// Copyright (c) 2021, FilipeCN.
+///
+/// The MIT License (MIT)
+///
+/// Permission is hereby granted, free of charge, to any person obtaining a copy
+/// of this software and associated documentation files (the "Software"), to
+/// deal in the Software without restriction, including without limitation the
+/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+/// sell copies of the Software, and to permit persons to whom the Software is
+/// furnished to do so, subject to the following conditions:
+///
+/// The above copyright notice and this permission notice shall be included in
+/// all copies or substantial portions of the Software.
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+/// IN THE SOFTWARE.
+///
+///\file core/bsdf.h
+///\author FilipeCN (filipedecn@gmail.com)
+///\date 2021-10-11
+///
+///\brief
+
 #ifndef HELIOS_CORE_BSDF_H
 #define HELIOS_CORE_BSDF_H
 
-#include <helios/core/interaction.h>
-#include <helios/core/reflection.h>
-
-#include <ponos.h>
+#include <helios/base/bxdf.h>
+#include <hermes/geometry/vector.h>
 
 namespace helios {
 
+// *********************************************************************************************************************
+//                                                                                                               BSDF
+// *********************************************************************************************************************
+/// Represents a Bidirectional Scattering Distribution Function
+/// The BSDF is composed of a set of BRDFs and BTDFs
+class BSDF {
+public:
+  // *******************************************************************************************************************
+  //                                                                                                     CONSTRUCTORS
+  // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE BSDF();
+  HERMES_DEVICE_CALLABLE BSDF(hermes::normal3 ns, hermes::vec3 dpdus, BxDF bxdf);
+  HERMES_DEVICE_CALLABLE ~BSDF();
+  // *******************************************************************************************************************
+  //                                                                                                        OPERATORS
+  // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE explicit operator bool() const;
+
+private:
+  BxDF bxdf_;
+};
+
+
+/*
 /// Represents a collection of BRDFs and BTDFs.
 class BSDF {
 public:
@@ -33,8 +82,8 @@ public:
   /// \param woW outgoing direction in world space
   /// \param wiW incident direction in world space
   /// \param types types filter
-  /// \return Spectrum total contribution of components
-  Spectrum f(const ponos::vec3 &woW, const ponos::vec3 &wiW,
+  /// \return SpectrumOld total contribution of components
+  SpectrumOld f(const ponos::vec3 &woW, const ponos::vec3 &wiW,
              BxDF::Type types) const;
   /// Computes the accumulated hemispherical-hemispherical reflectance that
   /// gives the fraction of incident light reflected by the surface when
@@ -43,8 +92,8 @@ public:
   /// \param samples1
   /// \param samples2
   /// \param flags BxDF type filter
-  /// \return Spectrum
-  Spectrum rho(int nSamples, const ponos::point2 *samples1,
+  /// \return SpectrumOld
+  SpectrumOld rho(int nSamples, const ponos::point2 *samples1,
                const ponos::point2 *samples2,
                BxDF::Type flags = BxDF::Type::BSDF_ALL) const;
   /// Computes the accumulated hemispherical-directional reflectance that gives
@@ -55,8 +104,8 @@ public:
   /// \param samples hemisphere sample positions (only needed by some
   /// algorithms)
   /// \param flags BxDF type filter
-  /// \return Spectrum the value of the function
-  Spectrum rho(const ponos::vec3 &wo, int nSamples,
+  /// \return SpectrumOld the value of the function
+  SpectrumOld rho(const ponos::vec3 &wo, int nSamples,
                const ponos::point2 *samples,
                BxDF::Type flags = BxDF::Type::BSDF_ALL) const;
 
@@ -75,7 +124,7 @@ private:
   static constexpr int maxBxDFs = 8;
   BxDF *bxdfs[maxBxDFs]; //!< component array
 };
-
+*/
 } // namespace helios
 
 #endif

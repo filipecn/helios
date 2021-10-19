@@ -27,7 +27,7 @@
 
 #include <helios/accelerators/list.h>
 #include <helios/shapes/intersection.h>
-#include <helios/shapes/shapes.h>
+#include <helios/shapes.h>
 
 namespace helios {
 
@@ -41,28 +41,28 @@ HERMES_DEVICE_CALLABLE const helios::bounds3 &ListAggregate::View::worldBound() 
   return world_bounds_;
 }
 
-HERMES_DEVICE_CALLABLE bool ListAggregate::View::intersect(const Ray &ray, SurfaceInteraction *isect) const {
+HERMES_DEVICE_CALLABLE hermes::Optional<ShapeIntersection> ListAggregate::View::intersect(const Ray &ray) const {
   real_t t_min, t_max;
 
+  ShapeIntersectionReturn si;
+
   if (!intersection::intersectP(world_bounds_, ray, &t_min, &t_max))
-    return false;
+    return {};
 
-  SurfaceInteraction local_isect;
-  bool intersected = false;
-  real_t min_hit = hermes::Constants::real_infinity;
-  real_t cur_hit = 0;
   for (const auto &primitive : primitives_) {
-
+    ShapeIntersectionReturn local_si;
     CAST_PRIMITIVE(primitive.value, primitive_ptr,
-                   intersected = primitive_ptr->intersect(ray, &local_isect);
+                   local_si = primitive_ptr->intersect(ray);
     );
 
-    if (intersected) {// && cur_hit < min_hit) {
-      *isect = local_isect;
-      min_hit = cur_hit;
+    if (local_si) {
+      if (si && si->t_hit > local_si->t_hit) {
+        si = local_si;
+      } else
+        si = local_si;
     }
   }
-  return intersected;
+  return si;
 }
 
 HERMES_DEVICE_CALLABLE bool ListAggregate::View::intersectP(const Ray &ray) const {

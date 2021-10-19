@@ -55,25 +55,29 @@ endif (BUILD_TESTS)
 ##########################################
 set(HEADERS
         helios/accelerators/list.h
+        helios/base/aggregate.h
+        helios/base/bxdf.h
+        helios/base/light.h
+        helios/base/material.h
+        helios/base/microfacet_distribution.h
+        helios/base/primitive.h
+        helios/base/shape.h
+        helios/base/spectrum.h
+        helios/base/texture.h
         helios/common/bitmask_operators.h
         helios/common/io.h
         helios/common/globals.h
         helios/common/result.h
         helios/cameras/perspective_camera.h
-        helios/core/aggregate.h
+        helios/core/bsdf.h
         helios/core/camera.h
         helios/core/film.h
         helios/core/filter.h
         helios/core/interaction.h
-        helios/core/light.h
         helios/core/mem.h
-        helios/core/primitive.h
         helios/core/renderer.cuh
-        #        helios/core/sampler.h
         helios/core/sampling.h
         helios/core/scene.h
-        helios/core/shape.h
-        helios/core/spectrum.h
         helios/geometry/animated_transform.h
         helios/geometry/bounds.h
         helios/geometry/ray.h
@@ -81,31 +85,42 @@ set(HEADERS
         helios/geometry/utils.h
         helios/integrators/whitted_integrator.h
         helios/lights/point.h
+        helios/materials/dielectric.h
         helios/samplers/pixel_sampler.h
         helios/samplers/sample_pool.h
         helios/samplers/stratified_sampler.h
+        helios/scattering/bxdfs.h
+        helios/scattering/dielectric_bxdf.h
+        helios/scattering/microfacet_distributions.h
+        helios/scattering/scattering.h
+        helios/scattering/trowbridge_reitz_distribution.h
         helios/shapes/intersection.h
-        helios/shapes/shapes.h
         helios/shapes/sphere.h
+        helios/spectra/blackbody_spectrum.h
+        helios/spectra/sampled_spectrum.h
+        helios/spectra/sampled_wave_lengths.h
+        helios/materials.h
+        helios/shapes.h
+        helios/spectra.h
+        helios/textures.h
         )
 
 set(SOURCES
         helios/accelerators/list.cpp
+        helios/base/light.cpp
+        helios/base/primitive.cpp
+        helios/base/spectrum.cpp
         helios/common/globals.cpp
         helios/common/io.cpp
         helios/cameras/perspective_camera.cpp
+        helios/core/bsdf.cpp
         helios/core/camera.cpp
         helios/core/film.cu
         helios/core/filter.cpp
         helios/core/interaction.cpp
-        helios/core/light.cpp
         helios/core/mem.cpp
-        helios/core/primitive.cpp
-        #        helios/core/sampler.cpp
         helios/core/sampling.cpp
         helios/core/scene.cpp
-        helios/core/shape.cpp
-        helios/core/spectrum.cpp
         helios/geometry/animated_transform.cpp
         helios/geometry/ray.cu
         helios/geometry/transform.cpp
@@ -114,8 +129,13 @@ set(SOURCES
         helios/samplers/pixel_sampler.cpp
         helios/samplers/sample_pool.cpp
         helios/samplers/stratified_sampler.cu
+        helios/scattering/dielectric_bxdf.cpp
+        helios/scattering/scattering.cpp
+        helios/scattering/trowbridge_reitz_distribution.cpp
         helios/shapes/intersection.cpp
         helios/shapes/sphere.cu
+        helios/spectra/sampled_spectrum.cpp
+        helios/spectra/sampled_wave_lengths.cpp
         )
 
 ##########################################

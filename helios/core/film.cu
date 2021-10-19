@@ -17,7 +17,7 @@ HERMES_DEVICE_CALLABLE FilmTile::~FilmTile() {
   delete[] pixels_;
 }
 
-HERMES_DEVICE_CALLABLE void FilmTile::addSample(const point2 &p, const Spectrum &L,
+HERMES_DEVICE_CALLABLE void FilmTile::addSample(const point2 &p, const SpectrumOld &L,
                                                 real_t sample_weight) {
   // compute sample's raster bounds
   point2 p_discrete = p - vec2(0.5f);
@@ -197,7 +197,7 @@ Array<real_t> FilmImage::imagePixels() {
   return rgb_;
 }
 
-//void FilmImageView::setImage(const Spectrum *img) const {
+//void FilmImageView::setImage(const SpectrumOld *img) const {
 //  int nPixels = film_.cropped_pixel_bounds.area();
 //  for (int i = 0; i < nPixels; ++i) {
 //    Pixel &p = pixels_[i];
@@ -207,7 +207,7 @@ Array<real_t> FilmImage::imagePixels() {
 //  }
 //}
 
-//void FilmImageView::addSplat(const point2 &p, const Spectrum &v) {
+//void FilmImageView::addSplat(const point2 &p, const SpectrumOld &v) {
 //  if (!film_.cropped_pixel_bounds.contains(p))
 //    return;
 //  real_t xyz[3];

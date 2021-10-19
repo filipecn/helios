@@ -27,16 +27,10 @@
 
 #include <catch2/catch.hpp>
 
-#include <helios/geometry/ray.h>
-#include <helios/shapes/sphere.h>
-#include <helios/base/shape.h>
-#include <helios/shapes/intersection.h>
+#include <helios/textures.h>
 
 using namespace helios;
 
-TEST_CASE("bounds", "[geometry]") {
-  Ray ray({0, 0, 0}, {1, 0, 0});
-  bounds3 box{{2, -1, -1}, {4, 2, 2}};
-  real_t h0, h1;
-  REQUIRE(intersection::intersectP(box, ray, &h0, &h1));
+TEST_CASE("Texture") {
+  mem::init(1024);
 }

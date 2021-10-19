@@ -19,49 +19,28 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file whitted_integrator.h
+///\file sampled_spectrum.h
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-06
+///\date 2021-10-15
 ///
 ///\brief
 
-#ifndef HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
-#define HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
+#ifndef HELIOS_HELIOS_SPECTRUM_SAMPLED_SPECTRUM_H
+#define HELIOS_HELIOS_SPECTRUM_SAMPLED_SPECTRUM_H
 
-#include <helios/geometry/ray.h>
 #include <helios/base/spectrum.h>
-#include <helios/core/scene.h>
-#include <helios/lights/point.h>
+#include <hermes/storage/array.h>
+#include <hermes/storage/array_slice.h>
 
 namespace helios {
 
 // *********************************************************************************************************************
-//                                                                                                  WhittedIntegrator
+//                                                                                                    SampledSpectrum
 // *********************************************************************************************************************
-class WhittedIntegrator {
+/// Represent a SPD with uniformly spaced samples over an wavelength range.
+/// The wavelengths covers from 400 nm to 700 nm
+class SampledSpectrum {
 public:
-  WhittedIntegrator() = default;
-
-  template<class SamplerType, typename SceneType>
-  HERMES_DEVICE_CALLABLE SpectrumOld
-  Li(const RayDifferential &ray, const SceneType &scene, SamplerType &sampler, int depth = 0) {
-    SpectrumOld L(0.);
-    // Find closest ray intersection or return background radiance
-    auto si = scene.intersect(ray.ray);
-    if (!si) {
-      for (const auto &light : scene.lights) {
-        if (light.value.type == LightType::POINT)
-          L += reinterpret_cast<const PointLight *>(light.value.data_ptr.get())->Le(ray);
-      }
-      return L;
-    }
-    // Compute emitted and reflected light at ray intersection point
-    // Initialize common variables for Whitted integrator
-//    const hermes::normal3 &n = isect.shading.n;
-//    hermes::vec3 wo = isect.interaction.wo;
-
-    return SpectrumOld(1);
-  }
   // *******************************************************************************************************************
   //                                                                                                   STATIC METHODS
   // *******************************************************************************************************************
@@ -71,12 +50,45 @@ public:
   // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
   // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE SampledSpectrum();
+  HERMES_DEVICE_CALLABLE explicit SampledSpectrum(real_t v);
+  HERMES_DEVICE_CALLABLE explicit SampledSpectrum(hermes::ArraySlice<const real_t> v);
   //                                                                                                       assignment
   // *******************************************************************************************************************
   //                                                                                                        OPERATORS
   // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE explicit operator bool() const;
   //                                                                                                       assignment
+  HERMES_DEVICE_CALLABLE real_t &operator[](int i) { return c_[i]; }
+  HERMES_DEVICE_CALLABLE real_t operator[](int i) const { return c_[i]; }
   //                                                                                                       arithmetic
+
+#define ARITHMETIC_OP(OP) \
+HERMES_DEVICE_CALLABLE SampledSpectrum &operator OP##=(const real_t &f) {                                           \
+  for(int i = 0; i < Spectrum::n_samples; ++i) c_[i] OP##= f;                                                       \
+  return *this;                                                                                                     \
+}                                                                                                                   \
+HERMES_DEVICE_CALLABLE SampledSpectrum &operator OP##=(const SampledSpectrum & s2) {                                \
+  for(int i = 0; i < Spectrum::n_samples; ++i) c_[i] OP##= s2[i];                                                   \
+  return *this;                                                                                                     \
+}                                                                                                                   \
+HERMES_DEVICE_CALLABLE SampledSpectrum operator OP(const real_t &f) const {                                         \
+  SampledSpectrum r;                                                                                                \
+  for(int i = 0; i < Spectrum::n_samples; ++i) r.c_[i] = c_[i] OP f;                                                \
+  return r;                                                                                                         \
+}                                                                                                                   \
+HERMES_DEVICE_CALLABLE SampledSpectrum operator OP(const SampledSpectrum & s2) const {                              \
+  SampledSpectrum r;                                                                                                \
+  for(int i = 0; i < Spectrum::n_samples; ++i)  r.c_[i] =  c_[i] OP s2[i];                                          \
+  return r;                                                                                                         \
+}
+
+  ARITHMETIC_OP(+)
+  ARITHMETIC_OP(-)
+  ARITHMETIC_OP(*)
+  ARITHMETIC_OP(/)
+
+#undef ARITHMETIC_OP
   //                                                                                                          boolean
   // *******************************************************************************************************************
   //                                                                                                          METHODS
@@ -84,8 +96,10 @@ public:
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
+private:
+  hermes::CArray<real_t, Spectrum::n_samples> c_;
 };
 
 }
 
-#endif //HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
+#endif //HELIOS_HELIOS_SPECTRUM_SAMPLED_SPECTRUM_H

@@ -1,4 +1,4 @@
-#include <helios/core/spectrum.h>
+#include <helios/base/spectrum.h>
 #include <hermes/numeric/interpolation.h>
 
 namespace helios {
@@ -753,23 +753,23 @@ const real_t CIE_lambda[nCIESamples] = {
     810, 811, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822, 823, 824,
     825, 826, 827, 828, 829, 830};
 
-SampledSpectrum SampledSpectrum::X;
-SampledSpectrum SampledSpectrum::Y;
-SampledSpectrum SampledSpectrum::Z;
-SampledSpectrum SampledSpectrum::rgbRefl2SpectWhite;
-SampledSpectrum SampledSpectrum::rgbRefl2SpectCyan;
-SampledSpectrum SampledSpectrum::rgbRefl2SpectMagenta;
-SampledSpectrum SampledSpectrum::rgbRefl2SpectYellow;
-SampledSpectrum SampledSpectrum::rgbRefl2SpectRed;
-SampledSpectrum SampledSpectrum::rgbRefl2SpectGreen;
-SampledSpectrum SampledSpectrum::rgbRefl2SpectBlue;
-SampledSpectrum SampledSpectrum::rgbIllum2SpectWhite;
-SampledSpectrum SampledSpectrum::rgbIllum2SpectCyan;
-SampledSpectrum SampledSpectrum::rgbIllum2SpectMagenta;
-SampledSpectrum SampledSpectrum::rgbIllum2SpectYellow;
-SampledSpectrum SampledSpectrum::rgbIllum2SpectRed;
-SampledSpectrum SampledSpectrum::rgbIllum2SpectGreen;
-SampledSpectrum SampledSpectrum::rgbIllum2SpectBlue;
+//SampledSpectrum SampledSpectrum::X;
+//SampledSpectrum SampledSpectrum::Y;
+//SampledSpectrum SampledSpectrum::Z;
+//SampledSpectrum SampledSpectrum::rgbRefl2SpectWhite;
+//SampledSpectrum SampledSpectrum::rgbRefl2SpectCyan;
+//SampledSpectrum SampledSpectrum::rgbRefl2SpectMagenta;
+//SampledSpectrum SampledSpectrum::rgbRefl2SpectYellow;
+//SampledSpectrum SampledSpectrum::rgbRefl2SpectRed;
+//SampledSpectrum SampledSpectrum::rgbRefl2SpectGreen;
+//SampledSpectrum SampledSpectrum::rgbRefl2SpectBlue;
+//SampledSpectrum SampledSpectrum::rgbIllum2SpectWhite;
+//SampledSpectrum SampledSpectrum::rgbIllum2SpectCyan;
+//SampledSpectrum SampledSpectrum::rgbIllum2SpectMagenta;
+//SampledSpectrum SampledSpectrum::rgbIllum2SpectYellow;
+//SampledSpectrum SampledSpectrum::rgbIllum2SpectRed;
+//SampledSpectrum SampledSpectrum::rgbIllum2SpectGreen;
+//SampledSpectrum SampledSpectrum::rgbIllum2SpectBlue;
 const real_t RGB2SpectLambda[nRGB2SpectSamples] = {
     380.000000, 390.967743, 401.935486, 412.903229, 423.870972, 434.838715,
     445.806458, 456.774200, 467.741943, 478.709686, 489.677429, 500.645172,
@@ -959,7 +959,7 @@ const real_t RGBIllum2SpectBlue[nRGB2SpectSamples] = {
     1.4878477178237029e-01, 1.6624255403475907e-01, 1.6997613960634927e-01,
     1.5769743995852967e-01, 1.9069090525482305e-01};
 
-Spectrum lerp(real_t t, const Spectrum &a, const Spectrum &b) {
+SpectrumOld lerp(real_t t, const SpectrumOld &a, const SpectrumOld &b) {
   return (1 - t) * a + t * b;
 }
 
@@ -1010,7 +1010,7 @@ real_t interpolateSpectrumSamples(const real_t *lambda, const real_t *vals,
   std::cout << LOG_LOCATION << std::endl;
   return 0.f;
 }
-
+/*
 SampledSpectrum SampledSpectrum::fromSamples(const real_t *lambda,
                                              const real_t *v, int n) {
   // sort samples if unordered
@@ -1066,7 +1066,7 @@ void SampledSpectrum::init() {
     Y.c[i] = averageSpectrumSamples(CIE_lambda, CIE_Y, nCIESamples, wl0, wl1);
     Z.c[i] = averageSpectrumSamples(CIE_lambda, CIE_Z, nCIESamples, wl0, wl1);
   }
-  // Compute RGB to spectrum functions for _SampledSpectrum_
+  // Compute RGB to spectra functions for _SampledSpectrum_
   for (int i = 0; i < nSpectralSamples; ++i) {
     real_t wl0 = hermes::interpolation::lerp(real_t(i) / real_t(nSpectralSamples),
                                              static_cast<real_t>(sampledLambdaStart),
@@ -1153,7 +1153,7 @@ SampledSpectrum SampledSpectrum::fromRGB(const float rgb[3],
                                          SpectrumType type) {
   SampledSpectrum r;
   if (type == SpectrumType::REFLECTANCE) {
-    // Convert reflectance spectrum to RGB
+    // Convert reflectance spectra to RGB
     if (rgb[0] <= rgb[1] && rgb[0] <= rgb[2]) {
       // Compute reflectance _SampledSpectrum_ with _rgb[0]_ as minimum
       r += rgb[0] * rgbRefl2SpectWhite;
@@ -1187,7 +1187,7 @@ SampledSpectrum SampledSpectrum::fromRGB(const float rgb[3],
     }
     r *= .94;
   } else {
-    // Convert illuminant spectrum to RGB
+    // Convert illuminant spectra to RGB
     if (rgb[0] <= rgb[1] && rgb[0] <= rgb[2]) {
       // Compute illuminant _SampledSpectrum_ with _rgb[0]_ as minimum
       r += rgb[0] * rgbIllum2SpectWhite;
@@ -1228,7 +1228,7 @@ SampledSpectrum &SampledSpectrum::operator=(const SampledSpectrum &other) {
   HERMES_NOT_IMPLEMENTED
   return *this;
 }
-
+*/
 HERMES_DEVICE_CALLABLE RGBSpectrum::RGBSpectrum(real_t v) : CoefficientSpectrum<3>(v) {}
 
 HERMES_DEVICE_CALLABLE RGBSpectrum::RGBSpectrum(const CoefficientSpectrum<3> &v)
@@ -1248,7 +1248,7 @@ HERMES_DEVICE_CALLABLE void RGBSpectrum::toRGB(real_t *rgb) const {
 
 HERMES_DEVICE_CALLABLE const RGBSpectrum &RGBSpectrum::toRGBSpectrum() const { return *this; }
 
-HERMES_DEVICE_CALLABLE RGBSpectrum RGBSpectrum::fromRGB(const real_t rgb[3], SpectrumType type) {
+HERMES_DEVICE_CALLABLE RGBSpectrum RGBSpectrum::fromRGB(const real_t rgb[3]) {
   RGBSpectrum s;
   s.c[0] = rgb[0];
   s.c[1] = rgb[1];
@@ -1289,7 +1289,7 @@ RGBSpectrum RGBSpectrum::fromSampled(const real_t *lambda, const real_t *v,
   return fromXYZ(xyz);
 }
 
-HERMES_DEVICE_CALLABLE RGBSpectrum RGBSpectrum::fromXYZ(const real_t xyz[3], SpectrumType type) {
+HERMES_DEVICE_CALLABLE RGBSpectrum RGBSpectrum::fromXYZ(const real_t xyz[3]) {
   RGBSpectrum r;
   XYZToRGB(xyz, r.c);
   return r;

@@ -96,12 +96,6 @@ HERMES_CUDA_KERNEL(render)(
   SamplerType tile_sampler = sampler;
   auto tile_index = tile.j * render_info.n_tiles.width + tile.i;
   tile_sampler.setIndex(tile_index);
-//  printf("%d %d %d %d\n", tile_bounds.lower().i, tile_bounds.lower().j, tile_bounds.upper().i, tile_bounds.upper().j);
-//  printf("%d %d %d %d\n",
-//         render_info.sample_bounds.lower().i,
-//         render_info.sample_bounds.lower().j,
-//         render_info.sample_bounds.upper().i,
-//         render_info.sample_bounds.upper().j);
 #ifdef HELIOS_DEBUG_DATA
   u32 pixel_sample_index = 0;
   u32 tile_ray_count = render_info.tile_size * render_info.tile_size * ddata.samples_per_pixel;
@@ -125,7 +119,7 @@ HERMES_CUDA_KERNEL(render)(
       ddata.debug_rays[ray_base_index + pixel_sample_index++] = ray;
 #endif
       // Evaluate radiance along camera ray
-      Spectrum L(0.f);
+      SpectrumOld L(0.f);
       if (ray_weight > 0)
         L = integrator.Li(ray, scene, tile_sampler);
       // Add camera ray's contribution to image

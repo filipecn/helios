@@ -19,58 +19,54 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file whitted_integrator.h
+///\file dielectric.h
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-06
+///\date 2021-10-13
 ///
 ///\brief
 
-#ifndef HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
-#define HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
+#ifndef HELIOS_HELIOS_BXDFS_DIELECTRIC_H
+#define HELIOS_HELIOS_BXDFS_DIELECTRIC_H
 
-#include <helios/geometry/ray.h>
+#include <helios/scattering/trowbridge_reitz_distribution.h>
 #include <helios/base/spectrum.h>
-#include <helios/core/scene.h>
-#include <helios/lights/point.h>
+#include <helios/base/bxdf.h>
+#include <hermes/geometry/point.h>
 
 namespace helios {
 
 // *********************************************************************************************************************
-//                                                                                                  WhittedIntegrator
+//                                                                                                     DielectricBxDF
 // *********************************************************************************************************************
-class WhittedIntegrator {
+class DielectricBxDF {
 public:
-  WhittedIntegrator() = default;
-
-  template<class SamplerType, typename SceneType>
-  HERMES_DEVICE_CALLABLE SpectrumOld
-  Li(const RayDifferential &ray, const SceneType &scene, SamplerType &sampler, int depth = 0) {
-    SpectrumOld L(0.);
-    // Find closest ray intersection or return background radiance
-    auto si = scene.intersect(ray.ray);
-    if (!si) {
-      for (const auto &light : scene.lights) {
-        if (light.value.type == LightType::POINT)
-          L += reinterpret_cast<const PointLight *>(light.value.data_ptr.get())->Le(ray);
-      }
-      return L;
-    }
-    // Compute emitted and reflected light at ray intersection point
-    // Initialize common variables for Whitted integrator
-//    const hermes::normal3 &n = isect.shading.n;
-//    hermes::vec3 wo = isect.interaction.wo;
-
-    return SpectrumOld(1);
-  }
   // *******************************************************************************************************************
   //                                                                                                   STATIC METHODS
   // *******************************************************************************************************************
+  static BxDF createBxDF(mem::Ptr data_ptr) {
+    bxdf_flags flags{bxdf_flags::NONE};
+    if (reinterpret_cast<DielectricBxDF *>(data_ptr.get())->eta_ == 1)
+      flags = bxdf_flags::TRANSMISSION;
+    flags = flags | bxdf_flags::REFLECTION;
+    if (reinterpret_cast<DielectricBxDF *>(data_ptr.get())->mf_distribution_.effectivelySmooth())
+      flags = flags | bxdf_flags::SPECULAR;
+    else
+      flags = flags | bxdf_flags::GLOSSY;
+    return {
+        .data_ptr = data_ptr,
+        .flags = flags,
+        .type = BxDFType::DIELECTRIC
+    };
+  }
   // *******************************************************************************************************************
   //                                                                                                 FRIEND FUNCTIONS
   // *******************************************************************************************************************
   // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
   // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE DielectricBxDF();
+  HERMES_DEVICE_CALLABLE DielectricBxDF(real_t eta, const TrowbridgeReitzDistribution &mf_distribution);
+  HERMES_DEVICE_CALLABLE ~DielectricBxDF();
   //                                                                                                       assignment
   // *******************************************************************************************************************
   //                                                                                                        OPERATORS
@@ -81,11 +77,44 @@ public:
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
+  /// \param wo outgoing direction
+  /// \param wi incident direction
+  /// \param mode
+  /// \return the value of the distribution function for the given pair of directions
+  [[nodiscard]] HERMES_DEVICE_CALLABLE SampledSpectrum f(const hermes::vec3 &wo,
+                                                         const hermes::vec3 &wi,
+                                                         TransportMode mode) const;
+  /// Computes the direction of incident light given an outgoing direction and computes the value of the BxDF
+  /// for the final pair of directions.
+  /// \param wo
+  /// \param uc
+  /// \param u
+  /// \param mode
+  /// \param sample_flags
+  /// \return
+  [[nodiscard]] HERMES_DEVICE_CALLABLE
+  BSDFSampleReturn sample_f(const hermes::vec3 &wo,
+                            real_t uc,
+                            const hermes::point2 &u,
+                            TransportMode mode,
+                            bxdf_refl_trans_flags sample_flags = bxdf_refl_trans_flags::ALL) const;
+  ///
+  /// \param wo
+  /// \param wi
+  /// \param mode
+  /// \param sampleFlags
+  /// \return
+  [[nodiscard]] HERMES_DEVICE_CALLABLE
+  real_t PDF(const hermes::vec3 &wo, const hermes::vec3 &wi, TransportMode mode,
+             bxdf_refl_trans_flags sampleFlags = bxdf_refl_trans_flags::ALL) const;
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
+private:
+  real_t eta_;
+  TrowbridgeReitzDistribution mf_distribution_;
 };
 
 }
 
-#endif //HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
+#endif //HELIOS_HELIOS_BXDFS_DIELECTRIC_H

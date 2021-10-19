@@ -19,58 +19,51 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file whitted_integrator.h
+///\file trowbridge_reitz_distribution.h
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-06
+///\date 2021-10-13
 ///
 ///\brief
 
-#ifndef HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
-#define HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
+#ifndef HELIOS_HELIOS_SCATTERING_TROWBRIDGE_REITZ_DISTRIBUTION_H
+#define HELIOS_HELIOS_SCATTERING_TROWBRIDGE_REITZ_DISTRIBUTION_H
 
-#include <helios/geometry/ray.h>
-#include <helios/base/spectrum.h>
-#include <helios/core/scene.h>
-#include <helios/lights/point.h>
+#include <helios/base/microfacet_distribution.h>
+#include <hermes/geometry/vector.h>
+#include <hermes/geometry/point.h>
 
 namespace helios {
 
 // *********************************************************************************************************************
-//                                                                                                  WhittedIntegrator
+//                                                                                        TrowbridgeReitzDistribution
 // *********************************************************************************************************************
-class WhittedIntegrator {
+/// Microfacet distribution from Trowbridge and Reitz (1975)
+/// Has the following form
+///     D(w_h) =                        1
+///              -----------------------------------------------------------------------------------------
+///               pi * alpha_x * alpha_y * cos^4 theta_h * (1 + tan^2 theta_h *
+///                                                 (cos^2 phi_h / alpha^2_x + sin^2 phi_h / alpha^2_y))^2
+///
+///     where alpha_* are anisotropic distribution components
+class TrowbridgeReitzDistribution {
 public:
-  WhittedIntegrator() = default;
-
-  template<class SamplerType, typename SceneType>
-  HERMES_DEVICE_CALLABLE SpectrumOld
-  Li(const RayDifferential &ray, const SceneType &scene, SamplerType &sampler, int depth = 0) {
-    SpectrumOld L(0.);
-    // Find closest ray intersection or return background radiance
-    auto si = scene.intersect(ray.ray);
-    if (!si) {
-      for (const auto &light : scene.lights) {
-        if (light.value.type == LightType::POINT)
-          L += reinterpret_cast<const PointLight *>(light.value.data_ptr.get())->Le(ray);
-      }
-      return L;
-    }
-    // Compute emitted and reflected light at ray intersection point
-    // Initialize common variables for Whitted integrator
-//    const hermes::normal3 &n = isect.shading.n;
-//    hermes::vec3 wo = isect.interaction.wo;
-
-    return SpectrumOld(1);
-  }
   // *******************************************************************************************************************
   //                                                                                                   STATIC METHODS
   // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE static MicrofacetDistribution createMFD(mem::Ptr data_ptr);
+  ///
+  /// \param roughness [0,1]
+  /// \return
+  HERMES_DEVICE_CALLABLE static real_t roughness2alpha(real_t roughness);
   // *******************************************************************************************************************
   //                                                                                                 FRIEND FUNCTIONS
   // *******************************************************************************************************************
   // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
   // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE TrowbridgeReitzDistribution();
+  HERMES_DEVICE_CALLABLE TrowbridgeReitzDistribution(real_t alpha_x, real_t alpha_y);
+  HERMES_DEVICE_CALLABLE ~TrowbridgeReitzDistribution();
   //                                                                                                       assignment
   // *******************************************************************************************************************
   //                                                                                                        OPERATORS
@@ -81,11 +74,44 @@ public:
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
+  [[nodiscard]] HERMES_DEVICE_CALLABLE bool effectivelySmooth() const;
+  /// Measures invisible masked microfacet area per visible microfacet area
+  /// \param w view direction
+  /// \return measurement for a given view direction w
+  [[nodiscard]] HERMES_DEVICE_CALLABLE real_t Lambda(const hermes::vec3 &w) const;
+  /// \param wm surface normal
+  /// \return the differential area of microfacets oriented with the given normal vector wm
+  [[nodiscard]] HERMES_DEVICE_CALLABLE real_t D(const hermes::vec3 &wm) const;
+  /// \param w
+  /// \param wm
+  /// \return
+  [[nodiscard]] HERMES_DEVICE_CALLABLE real_t D(const hermes::vec3& w, const hermes::vec3 &wm) const;
+  /// masking-shadowing function
+  /// \param w view direction
+  /// \return the fraction of microfacets visible from the given direction w
+  [[nodiscard]] HERMES_DEVICE_CALLABLE real_t G1(const hermes::vec3 &w) const;
+  /// \param wo outgoing direction
+  /// \param wi incident direction
+  /// \return fraction of microfacets visible from both directions wo and wi
+  [[nodiscard]] HERMES_DEVICE_CALLABLE real_t G(const hermes::vec3 &wo, const hermes::vec3 &wi) const;
+  ///
+  /// \param w
+  /// \param u
+  /// \return
+  [[nodiscard]] HERMES_DEVICE_CALLABLE hermes::vec3 sample_wm(const hermes::vec3 &w, const hermes::point2 &u) const;
+  ///
+  /// \param w
+  /// \param wm
+  /// \return
+  [[nodiscard]] HERMES_DEVICE_CALLABLE real_t PDF(const hermes::vec3& w, const hermes::vec3& wm) const;
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
+private:
+  real_t alpha_x_{0};
+  real_t alpha_y_{0};
 };
 
 }
 
-#endif //HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
+#endif //HELIOS_HELIOS_SCATTERING_TROWBRIDGE_REITZ_DISTRIBUTION_H

@@ -19,25 +19,35 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file light.cpp
+///\file sampled_spectrum.cpp
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-12
+///\date 2021-10-15
 ///
 ///\brief
 
-#include <helios/core/light.h>
+#include <helios/spectra/sampled_spectrum.h>
 
 namespace helios {
 
-HERMES_DEVICE_CALLABLE VisibilityTester::VisibilityTester(const Interaction &p0, const Interaction &p1) : p0{p0},
-                                                                                                          p1{p1} {
+HERMES_DEVICE_CALLABLE SampledSpectrum::SampledSpectrum() {
 
 }
 
-HERMES_DEVICE_CALLABLE VisibilityTester::~VisibilityTester() {}
+HERMES_DEVICE_CALLABLE SampledSpectrum::SampledSpectrum(real_t v) {
+  c_ = v;
+}
 
-HERMES_DEVICE_CALLABLE const Interaction &VisibilityTester::operator[](u32 p) const {
-  return (&p0)[p];
+HERMES_DEVICE_CALLABLE SampledSpectrum::SampledSpectrum(hermes::ArraySlice<const real_t> v) {
+  HERMES_CHECK_EXP(Spectrum::n_samples == v.size())
+  for (int i = 0; i < Spectrum::n_samples; ++i)
+    c_[i] = v[i];
+}
+
+HERMES_DEVICE_CALLABLE SampledSpectrum::operator bool() const {
+  for (int i = 0; i < Spectrum::n_samples; ++i)
+    if (c_[i] != 0)
+      return true;
+  return false;
 }
 
 }

@@ -26,8 +26,9 @@
 #define HELIOS_CORE_PRIMITIVE_H
 
 #include <helios/core/interaction.h>
-#include <helios/core/shape.h>
+#include <helios/base/shape.h>
 #include <helios/geometry/bounds.h>
+#include <hermes/common/optional.h>
 
 namespace helios {
 
@@ -40,6 +41,13 @@ class GeometricPrimitive;
 
 // Base data for primitives
 struct Primitive {
+  // *******************************************************************************************************************
+  //                                                                                                        OPERATORS
+  // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE explicit operator bool() const { return (bool) data_ptr; }
+  // *******************************************************************************************************************
+  //                                                                                                    PUBLIC FIELDS
+  // *******************************************************************************************************************
   PrimitiveType type{PrimitiveType::GEOMETRIC_PRIMITIVE};
   mem::Ptr data_ptr;
 };
@@ -67,7 +75,7 @@ public:
   /// \param r ray
   /// \param si surface interaction object
   /// \return true if intersection exists
-  HERMES_DEVICE_CALLABLE bool intersect(const Ray &r, SurfaceInteraction *si) const;
+  [[nodiscard]] HERMES_DEVICE_CALLABLE ShapeIntersectionReturn intersect(const Ray &r) const;
   /// Predicate to ray - primitive intersection
   /// \param r ray
   /// \return true if intersection exits

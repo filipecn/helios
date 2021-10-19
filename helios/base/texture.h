@@ -19,60 +19,39 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file list.h
+///\file texture.h
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-10
+///\date 2021-10-18
 ///
 ///\brief
 
-#ifndef HELIOS_HELIOS_ACCELERATORS_LIST_H
-#define HELIOS_HELIOS_ACCELERATORS_LIST_H
+#ifndef HELIOS_HELIOS_CORE_TEXTURE_H
+#define HELIOS_HELIOS_CORE_TEXTURE_H
 
-#include <helios/geometry/bounds.h>
-#include <helios/core/interaction.h>
-#include <hermes/storage/array.h>
-#include <helios/base/primitive.h>
-#include <helios/base/aggregate.h>
+#include <helios/core/mem.h>
 
 namespace helios {
 
-class ListAggregate {
-public:
-  class View {
-    friend class ListAggregate;
-  public:
-    View();
-    View &operator=(const View &other);
-    /// \return
-    [[nodiscard]] HERMES_DEVICE_CALLABLE const bounds3 &worldBound() const;
-    /// \param ray
-    /// \return
-    [[nodiscard]] HERMES_DEVICE_CALLABLE ShapeIntersectionReturn intersect(const Ray &ray) const;
-    /// \param ray
-    /// \return
-    [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Ray &ray) const;
-  private:
-    explicit View(const hermes::ConstArrayView<Primitive> &primitives, const bounds3 &world_bounds);
-    hermes::ConstArrayView<Primitive> primitives_;
-    bounds3 world_bounds_;
-  };
-  // *******************************************************************************************************************
-  //                                                                                                     CONSTRUCTORS
-  // *******************************************************************************************************************
-  ListAggregate();
-  ~ListAggregate();
-  // *******************************************************************************************************************
-  //                                                                                                          METHODS
-  // *******************************************************************************************************************
-  HeResult init(const std::vector<Primitive> &primitives, hermes::ConstArrayView<Primitive> d_primitives);
-  View view();
+enum class TextureType {
+  CUSTOM
+};
 
-private:
-  hermes::ConstArrayView<Primitive> primitives_;
-  hermes::ConstArrayView<Primitive> d_primitives_;
-  bounds3 world_bounds_;
+// *********************************************************************************************************************
+//                                                                                                            Texture
+// *********************************************************************************************************************
+/// Texture Interface
+struct Texture {
+  // *******************************************************************************************************************
+  //                                                                                                        OPERATORS
+  // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE explicit operator bool() const { return (bool) data_ptr; }
+  // *******************************************************************************************************************
+  //                                                                                                    PUBLIC FIELDS
+  // *******************************************************************************************************************
+  mem::Ptr data_ptr;                       //!<
+  TextureType type{TextureType::CUSTOM}; //!<
 };
 
 }
 
-#endif //HELIOS_HELIOS_ACCELERATORS_LIST_H
+#endif //HELIOS_HELIOS_CORE_TEXTURE_H

@@ -34,11 +34,23 @@
 #include <helios/core/interaction.h>
 #include <helios/geometry/transform.h>
 #include <helios/core/mem.h>
+#include <helios/core/interaction.h>
+#include <hermes/common/optional.h>
 
 #include <memory>
 #include <vector>
 
 namespace helios {
+
+// *********************************************************************************************************************
+//                                                                                                  ShapeIntersection
+// *********************************************************************************************************************
+struct ShapeIntersection {
+  SurfaceInteraction interaction;
+  real_t t_hit{};
+};
+
+using ShapeIntersectionReturn = hermes::Optional<ShapeIntersection>;
 
 enum class ShapeType {
   SPHERE,
@@ -64,8 +76,9 @@ HELIOS_ENABLE_BITMASK_OPERATORS(shape_flags);
 /// All shapes receive a unique id.
 struct Shape {
   // *******************************************************************************************************************
-  //                                                                                                          METHODS
+  //                                                                                                        OPERATORS
   // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE explicit operator bool() const { return (bool) data_ptr; }
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
@@ -76,47 +89,6 @@ struct Shape {
   ShapeType type{ShapeType::CUSTOM};     //!<
   shape_flags flags{shape_flags::NONE};  //!<
 };
-
-
-// *******************************************************************************************************************
-//                                                                                                     CONSTRUCTORS
-// *******************************************************************************************************************
-/// \param o2w  object to world transformation
-/// \param w2o  world to object transformation
-/// \param ro   reverse orientation: indicates if the surface normal directions should be reversed
-///             from default (default = normals pointing outside).
-//Shape(const hermes::Transform *o2w, const hermes::Transform *w2o, bool ro);
-
-/// Shape bounding box.
-/// \return bounding box of the shapet (in world space)
-//[[nodiscard]] bounds3 worldBound() const;
-// *******************************************************************************************************************
-//                                                                                                        INTERFACE
-// *******************************************************************************************************************
-//                                                                                                         geometry
-/// Shape bounding box.
-/// \return bounding box of the shape (in object space)
-//[[nodiscard]] virtual bounds3 objectBound() const = 0;
-/// \return object's surface area
-//virtual real_t surfaceArea() const = 0;
-//                                                                                                     intersection
-/// \param ray                  ray to be intersected (in world space).
-/// \param tHit [out]           if an intersection is found, **tHit receives the parametric distance along
-///                             the ray, between (0, tMax), to the intersection point.
-/// \param isect [out]          information about the geometry of the intersection point
-/// \param test_alpha_texture   true if the can be cutted away using a
-/// texture
-/// \return **true** if an intersection was found
-//virtual bool intersect(const Ray &ray, real_t *tHit, SurfaceInteraction *isect,
-//                       bool test_alpha_texture = true) const = 0;
-/// Predicate that determines if an intersection occurs.
-/// \param ray                  ray to be intersected (in world space).
-/// \param test_alpha_texture   true if the can be cut away using a
-/// texture
-/// \return true if an intersection exists
-//virtual bool intersectP(const Ray &ray, bool test_alpha_texture = true) const;
-//const uint32_t shape_id;
-//static uint32_t nextShapeId;
 
 } // namespace helios
 

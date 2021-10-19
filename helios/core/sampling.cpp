@@ -36,6 +36,12 @@ using namespace hermes;
 
 namespace helios::sampling {
 
+HERMES_DEVICE_CALLABLE hermes::point2 sampleUniformDiskPolar(const hermes::point2 &u) {
+  real_t r = std::sqrt(u[0]);
+  real_t theta = 2 * hermes::Constants::pi * u[1];
+  return {r * std::cos(theta), r * std::sin(theta)};
+}
+
 HERMES_DEVICE_CALLABLE hermes::point2 concentricSampleDisk(const point2 &u) {
   // Map uniform random numbers to $[-1,1]^2$
   point2 u_offset = 2.f * u - vec2(1, 1);

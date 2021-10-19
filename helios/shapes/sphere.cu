@@ -40,8 +40,7 @@ HERMES_DEVICE_CALLABLE bbox3 Sphere::objectBound() const {
   return bbox3(point3(-radius_, -radius_, zmin), point3(radius_, radius_, zmax));
 }
 
-HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, real_t *tHit, SurfaceInteraction *isect,
-                                              bool test_alpha_texture) const {
+HERMES_DEVICE_CALLABLE ShapeIntersectionReturn Sphere::intersect(const Shape *shape, const Ray &r) const {
   real_t phi;
   point3 phit;
   // transform HRay to object space
@@ -57,15 +56,15 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, 
   // solve quadritic equation for t values
   EFloat t0, t1;
   if (!solve_quadratic(a, b, c, &t0, &t1))
-    return false;
+    return {};
   // check quadric shape t0 and t1 for nearest intersection
   if (t0.upperBound() > ray.max_t || t1.lowerBound() <= 0)
-    return false;
+    return {};
   EFloat thit = t0;
   if (thit.lowerBound() <= 0) {
     thit = t1;
     if (thit.upperBound() > ray.max_t)
-      return false;
+      return {};
   }
   // compute Sphere hit position and phi
   phit = ray((real_t) thit);
@@ -80,9 +79,9 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, 
   if ((zmin > -radius_ && phit.z < zmin) || (zmax < radius_ && phit.z > zmax) ||
       phi > phi_max) {
     if (thit == t1)
-      return false;
+      return {};
     if (t1.upperBound() > ray.max_t)
-      return false;
+      return {};
     thit = t1;
     // compute Sphere hit position and phi
     phit = ray((real_t) thit);
@@ -95,7 +94,7 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, 
       phi += 2 * Constants::pi;
     if ((zmin > -radius_ && phit.z < zmin) || (zmax < radius_ && phit.z > zmax) ||
         phi > phi_max)
-      return false;
+      return {};
   }
   // find parametric representation of Sphere hit
   real_t u = phi / phi_max;
@@ -131,16 +130,16 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersect(const Shape *shape, const Ray &r, 
       (f * F - g * E) * invEFG2 * dpdv);
   // compute error bounds for sphere intersection
   vec3f pError = Numbers::gamma(5) * abs((vec3f) phit);
-  // initialize SurfaceInteraction from parametric information
-  *isect = transform(shape->o2w, SurfaceInteraction(phit, pError, point2f(u, v),
-                                                    -ray.d, dpdu, dpdv, dndu, dndv,
-                                                    ray.time, shape));
-  // update tHit for quadric intersection
-  *tHit = (real_t) (thit);
-  return true;
+
+  return ShapeIntersection{
+      .interaction = transform(shape->o2w, SurfaceInteraction(phit, pError, point2f(u, v),
+                                                              -ray.d, dpdu, dpdv, dndu, dndv,
+                                                              ray.time)),
+      .t_hit = (real_t) (thit)
+  };
 }
 
-HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape *shape, const Ray &r, bool test_alpha_texture) const {
+HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape *shape, const Ray &r) const {
   real_t phi;
   point3 phit;
   // transform HRay to object space

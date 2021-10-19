@@ -6,7 +6,10 @@ set(SOURCES
         geometry_tests.cu
         renderers_tests.cu
         sampling_tests.cu
+        scattering_tests.cu
         shape_tests.cu
+        spectrum_tests.cu
+        texture_tests.cu
         )
 
 add_executable(helios_tests ${SOURCES})

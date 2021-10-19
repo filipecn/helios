@@ -29,12 +29,12 @@
 #define HELIOS_HELIOS_CORE_SCENE_H
 
 #include <helios/core/interaction.h>
-#include <helios/core/light.h>
+#include <helios/base/light.h>
 #include <helios/geometry/bounds.h>
-#include <helios/core/aggregate.h>
+#include <helios/base/aggregate.h>
 #include <helios/accelerators/list.h>
 #include <hermes/storage/array.h>
-#include "primitive.h"
+#include <helios/base/primitive.h>
 
 namespace helios {
 
@@ -49,14 +49,13 @@ public:
     /// \return
     [[nodiscard]] HERMES_DEVICE_CALLABLE const bounds3 &worldBound() const;
     /// \param ray
-    /// \param isect
     /// \return
-    HERMES_DEVICE_CALLABLE bool intersect(const Ray &ray, SurfaceInteraction *isect) const;
+    [[nodiscard]] HERMES_DEVICE_CALLABLE ShapeIntersectionReturn intersect(const Ray &ray) const;
     /// \param ray
     /// \return
     [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Ray &ray) const;
     //  HERMES_DEVICE_CALLABLE bool intersectTr(Ray ray,
-    //  Sampler &sampler, SurfaceInteraction *isect, Spectrum *transmittance) const;
+    //  Sampler &sampler, SurfaceInteraction *isect, SpectrumOld *transmittance) const;
     hermes::ConstArrayView<Light> lights;
     hermes::ConstArrayView<Primitive> primitives;
     hermes::ConstArrayView<Shape> shapes;

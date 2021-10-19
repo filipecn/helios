@@ -22,8 +22,8 @@
  *
  */
 
-#include <helios/core/primitive.h>
-#include <helios/shapes/shapes.h>
+#include <helios/base/primitive.h>
+#include <helios/shapes.h>
 
 namespace helios {
 
@@ -34,7 +34,7 @@ Primitive GeometricPrimitive::createPrimitive(mem::Ptr data_ptr) {
   };
 }
 
-Primitive GeometricPrimitive::createPrimitive(const Shape* shape) {
+Primitive GeometricPrimitive::createPrimitive(const Shape *shape) {
   auto geo_prim_data = mem::allocate<GeometricPrimitive>(*shape);
   return {
       .type = PrimitiveType::GEOMETRIC_PRIMITIVE,
@@ -48,29 +48,20 @@ HERMES_DEVICE_CALLABLE bounds3 GeometricPrimitive::worldBounds() const {
   return shape.bounds;
 }
 
-HERMES_DEVICE_CALLABLE bool GeometricPrimitive::intersect(const Ray &ray, SurfaceInteraction *si) const {
-  bool intersected = false;
-  real_t cur_hit = 0;
-
+HERMES_DEVICE_CALLABLE ShapeIntersectionReturn GeometricPrimitive::intersect(const Ray &ray) const {
+  hermes::Optional<ShapeIntersection> si;
   CAST_CONST_SHAPE(shape, shape_ptr,
-             if (shape_ptr->intersectP(&shape, ray, false))
-               intersected = shape_ptr->intersect(&shape, ray, &cur_hit, si, false);
+                   if (shape_ptr->intersectP(&shape, ray))
+                     si = shape_ptr->intersect(&shape, ray);
   );
-
-  if (!intersected)
-    return false;
-  ray.max_t = cur_hit;
-  si->primitive = this;
-  // CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
-  // TODO handle medium
-  return true;
+  return si;
 }
 
 HERMES_DEVICE_CALLABLE bool GeometricPrimitive::intersectP(const Ray &ray) const {
   bool intersected = false;
 
   CAST_SHAPE(shape, shape_ptr,
-             intersected = shape_ptr->intersectP(&shape, ray, false);
+             intersected = shape_ptr->intersectP(&shape, ray);
   );
 
   return intersected;

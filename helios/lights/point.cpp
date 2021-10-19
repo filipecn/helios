@@ -45,20 +45,20 @@ Light PointLight::createLight(const hermes::point3 &world_position, mem::Ptr dat
 
 PointLight::PointLight() = default;
 
-PointLight::PointLight(const Light &light, const Spectrum &I) : p_light_(light.light2world(point3())), I_(I) {}
+PointLight::PointLight(const Light &light, const SpectrumOld &I) : p_light_(light.light2world(point3())), I_(I) {}
 
-HERMES_DEVICE_CALLABLE Spectrum PointLight::sampleLi(const Interaction &ref,
-                                                     const point2 &u,
-                                                     hermes::vec3 *wi,
-                                                     real_t *pdf,
-                                                     VisibilityTester *vis) const {
+HERMES_DEVICE_CALLABLE SpectrumOld PointLight::sampleLi(const Interaction &ref,
+                                                        const point2 &u,
+                                                        hermes::vec3 *wi,
+                                                        real_t *pdf,
+                                                        VisibilityTester *vis) const {
   *wi = normalize(p_light_ - ref.p);
   *pdf = 1.f;
   *vis = VisibilityTester(ref, Interaction(p_light_, ref.time));
   return I_ / distance2(p_light_, ref.p);
 }
 
-HERMES_DEVICE_CALLABLE Spectrum PointLight::power() const {
+HERMES_DEVICE_CALLABLE SpectrumOld PointLight::power() const {
   return 4 * Constants::pi * I_;
 }
 

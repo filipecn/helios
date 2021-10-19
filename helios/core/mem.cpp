@@ -29,10 +29,13 @@
 
 namespace helios {
 
-mem::Ptr::Ptr() = default;
+HERMES_DEVICE_CALLABLE mem::Ptr::Ptr() {}
 
-mem::Ptr::Ptr(hermes::AddressIndex address_index) : address_index(address_index) {
+HERMES_DEVICE_CALLABLE mem::Ptr::Ptr(hermes::AddressIndex address_index) : address_index(address_index) {
+#if __CUDA_ARCH__ && __CUDA_ARCH__ > 0
+#else
   update();
+#endif
 }
 
 HERMES_DEVICE_CALLABLE void *mem::Ptr::get() {
@@ -49,6 +52,10 @@ void mem::Ptr::update() {
 
 HERMES_DEVICE_CALLABLE void mem::Ptr::update(hermes::StackAllocatorView m) {
   ptr = m.get<void>(address_index);
+}
+
+HERMES_DEVICE_CALLABLE mem::Ptr::operator bool() const {
+  return ptr != nullptr;
 }
 
 HeResult mem::init(std::size_t size_in_bytes) {

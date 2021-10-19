@@ -44,8 +44,9 @@ public:
   //                                                                                                          Pointer
   // *******************************************************************************************************************
   struct Ptr {
-    Ptr();
-    explicit Ptr(hermes::AddressIndex address_index);
+    HERMES_DEVICE_CALLABLE Ptr();
+    HERMES_DEVICE_CALLABLE Ptr(hermes::AddressIndex address_index);
+    HERMES_DEVICE_CALLABLE explicit operator bool() const;
     HERMES_DEVICE_CALLABLE  void *get();
     [[nodiscard]] HERMES_DEVICE_CALLABLE const void *get() const;
     void update();

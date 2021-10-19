@@ -37,11 +37,11 @@ HERMES_DEVICE_CALLABLE const bounds3 &Scene::View::worldBound() const {
   return {};
 }
 
-HERMES_DEVICE_CALLABLE bool Scene::View::intersect(const Ray &ray, SurfaceInteraction *isect) const {
+HERMES_DEVICE_CALLABLE ShapeIntersectionReturn Scene::View::intersect(const Ray &ray) const {
   // TODO check ray direction not null
   if (aggregate_.type == AggregateType::LIST)
-    return reinterpret_cast<const ListAggregate::View *>(aggregate_.data_ptr.get())->intersect(ray, isect);
-  return false;
+    return reinterpret_cast<const ListAggregate::View *>(aggregate_.data_ptr.get())->intersect(ray);
+  return {};
 }
 
 HERMES_DEVICE_CALLABLE bool Scene::View::intersectP(const Ray &ray) const {

@@ -48,7 +48,7 @@ namespace helios {
 template<>                           \
 struct EnableBitMaskOperators<x>     \
 {                                    \
-    static const bool enable = true; \
+    static const bool enable = true;       \
 }
 
 #define HELIOS_MASK_BIT(MASK, BIT) ((u32)(MASK) & (u32)(BIT)) == (u32)(BIT)

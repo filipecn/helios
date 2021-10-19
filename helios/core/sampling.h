@@ -32,9 +32,14 @@
 
 namespace helios::sampling {
 
+///
 /// \param u
 /// \return
-HERMES_DEVICE_CALLABLE hermes::point2 concentricSampleDisk(const hermes::point2& u);
+HERMES_DEVICE_CALLABLE hermes::point2 sampleUniformDiskPolar(const hermes::point2& u);
+
+/// \param u
+/// \return
+HERMES_DEVICE_CALLABLE hermes::point2 concentricSampleDisk(const hermes::point2 &u);
 
 }
 

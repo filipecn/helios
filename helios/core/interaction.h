@@ -1,4 +1,3 @@
-// Created by filipecn on 2018-12-06.
 /*
  * Copyright (c) 2018 FilipeCN
  *
@@ -25,18 +24,13 @@
 #ifndef HELIOS_INTERACTION_H
 #define HELIOS_INTERACTION_H
 
-//#include <helios/core/bsdf.h>
 #include <helios/geometry/ray.h>
 #include <hermes/geometry/normal.h>
 #include <hermes/geometry/point.h>
+#include <helios/base/material.h>
+#include <helios/core/bsdf.h>
 
 namespace helios {
-
-// *********************************************************************************************************************
-//                                                                                               FORWARD DECLARATIONS
-// *********************************************************************************************************************
-class Shape;
-class GeometricPrimitive;
 
 // *********************************************************************************************************************
 //                                                                                                        Interaction
@@ -77,18 +71,19 @@ public:
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
-  hermes::point3 p;    //!< point of interaction
-  real_t time{0};      //!< time of interaction (ray's parametric coordinate)
-  hermes::vec3 pError; //!< error associated with p computation
-  hermes::vec3 wo;     //!< negative ray direction (outgoing direction)
-  hermes::normal3 n;   //!< surface's normal at p (if a surface exists)
+  hermes::point3 p;                            //!< point of interaction
+  real_t time{0};                              //!< time of interaction (ray's parametric coordinate)
+  hermes::vec3 pError;                         //!< error associated with p computation
+  hermes::vec3 wo;                             //!< negative ray direction (outgoing direction)
+  hermes::normal3 n;                           //!< surface's normal at p (if a surface exists)
+  hermes::point2 uv;                           //!< parametric coordinated of the surface at p
 };
 
 // *********************************************************************************************************************
 //                                                                                                 SurfaceInteraction
 // *********************************************************************************************************************
 /// The geometry of a ray-shape interaction at a particular point on its surface
-class SurfaceInteraction {
+class SurfaceInteraction : public Interaction {
 public:
   // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
@@ -108,7 +103,7 @@ public:
                                             const hermes::vec3 &outgoingDirection,
                                             const hermes::vec3 &dpdu, const hermes::vec3 &dpdv,
                                             const hermes::normal3 &dndu, const hermes::normal3 &dndv,
-                                            real_t t, const Shape *shape);
+                                            real_t t);
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
@@ -123,35 +118,25 @@ public:
                                                  bool orientationIsAuthoritative);
   ///
   /// \param ray
-  /// \param arena used to allocate memory for BSDFs and BSSRDFs
-  /// \param allowMultipleLobes indicates whether the material should use BxDFs
-  /// that aggregate multiple types of scattering into a single BxDF
-  /// \param mode indicates whether the surface intersection was found along a
-  /// path starting from camera or light
-//  void computeScatteringFunctions(const RayDifferential &ray,
-//                                  hermes::MemoryArena &arena,
-//                                  bool allowMultipleLobes, TransportMode mode);
+  HERMES_DEVICE_CALLABLE void computeDifferentials(const RayDifferential &ray) const;
   ///
   /// \param ray
-  HERMES_DEVICE_CALLABLE void computeDifferentials(const RayDifferential &ray) const;
+  /// \return
+  HERMES_DEVICE_CALLABLE BSDF bsdf(const RayDifferential &ray);
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
-  Interaction interaction;
-  hermes::point2 uv;            //!< parametric coordinated of the surface at **Interaction::p**
+  Material material;
   hermes::vec3 dpdu;            //!< partial derivative of u at p
   hermes::vec3 dpdv;            //!< partial derivative of v at p
   hermes::normal3 dndu;         //!< change in surface's normal at u direction
   hermes::normal3 dndv;         //!< change in surface's normal at v direction
+  int face_index{0};
   struct {
     hermes::normal3 n;
     hermes::vec3 dpdu, dpdv;
     hermes::normal3 dndu, dndv;
   } shading; //!< represents perturbations on the quantities of the interaction (ex: bump mapping)
-  const Shape *shape = nullptr;
-  const GeometricPrimitive *primitive = nullptr;
-//  BSDF *bsdf = nullptr;
-//  BSSRDF *bssrdf = nullptr;
   mutable hermes::vec3 dpdx, dpdy;
   mutable real_t dudx = 0, dvdx = 0, dudy = 0, dvdy = 0;
 };

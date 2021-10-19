@@ -19,49 +19,24 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file whitted_integrator.h
+///\file sampled_wave_spectrum.h
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-06
+///\date 2021-10-15
 ///
 ///\brief
 
-#ifndef HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
-#define HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
+#ifndef HELIOS_HELIOS_SPECTRUM_SAMPLED_WAVE_LENGTHS_H
+#define HELIOS_HELIOS_SPECTRUM_SAMPLED_WAVE_LENGTHS_H
 
-#include <helios/geometry/ray.h>
-#include <helios/base/spectrum.h>
-#include <helios/core/scene.h>
-#include <helios/lights/point.h>
+#include <helios/spectra/sampled_spectrum.h>
 
 namespace helios {
 
 // *********************************************************************************************************************
-//                                                                                                  WhittedIntegrator
+//                                                                                                 SampledWaveLengths
 // *********************************************************************************************************************
-class WhittedIntegrator {
+class SampledWaveLengths {
 public:
-  WhittedIntegrator() = default;
-
-  template<class SamplerType, typename SceneType>
-  HERMES_DEVICE_CALLABLE SpectrumOld
-  Li(const RayDifferential &ray, const SceneType &scene, SamplerType &sampler, int depth = 0) {
-    SpectrumOld L(0.);
-    // Find closest ray intersection or return background radiance
-    auto si = scene.intersect(ray.ray);
-    if (!si) {
-      for (const auto &light : scene.lights) {
-        if (light.value.type == LightType::POINT)
-          L += reinterpret_cast<const PointLight *>(light.value.data_ptr.get())->Le(ray);
-      }
-      return L;
-    }
-    // Compute emitted and reflected light at ray intersection point
-    // Initialize common variables for Whitted integrator
-//    const hermes::normal3 &n = isect.shading.n;
-//    hermes::vec3 wo = isect.interaction.wo;
-
-    return SpectrumOld(1);
-  }
   // *******************************************************************************************************************
   //                                                                                                   STATIC METHODS
   // *******************************************************************************************************************
@@ -75,6 +50,8 @@ public:
   // *******************************************************************************************************************
   //                                                                                                        OPERATORS
   // *******************************************************************************************************************
+  HERMES_DEVICE_CALLABLE real_t &operator[](int i) { return lambda_[i]; }
+  HERMES_DEVICE_CALLABLE real_t operator[](int i) const { return lambda_[i]; }
   //                                                                                                       assignment
   //                                                                                                       arithmetic
   //                                                                                                          boolean
@@ -84,8 +61,10 @@ public:
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
+private:
+  hermes::CArray<real_t, Spectrum::n_samples> lambda_, pdf_;
 };
 
 }
 
-#endif //HELIOS_HELIOS_INTEGRATORS_WHITTED_INTEGRATOR_H
+#endif //HELIOS_HELIOS_SPECTRUM_SAMPLED_WAVE_LENGTHS_H

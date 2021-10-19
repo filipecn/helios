@@ -32,7 +32,7 @@
 #include <helios/core/film.h>
 #include <helios/integrators/whitted_integrator.h>
 #include <helios/core/renderer.cuh>
-#include <helios/shapes/shapes.h>
+#include <helios/shapes.h>
 #include <helios/common/io.h>
 
 using namespace helios;
@@ -55,7 +55,8 @@ TEST_CASE("SamplerRenderer") {
   FilmImage film_image(Film(res, &filter, 10));
   // setup camera
   PerspectiveCamera camera(AnimatedTransform(),
-                           {{-1, -1}, {1, 1}}, film_image.film().full_resolution,
+                           {{-1, -1}, {1, 1}},
+                           film_image.film().full_resolution,
                            0, 1, 0, 1, 45);
   // setup renderer
   WhittedIntegrator integrator;

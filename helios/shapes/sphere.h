@@ -25,8 +25,9 @@
 #ifndef HELIOS_SHAPES_H_SPHERE_H
 #define HELIOS_SHAPES_H_SPHERE_H
 
-#include <helios/core/shape.h>
+#include <helios/base/shape.h>
 #include <hermes/numeric/numeric.h>
+#include <hermes/common/optional.h>
 
 namespace helios {
 
@@ -65,20 +66,16 @@ public:
   /// \return
   [[nodiscard]] HERMES_DEVICE_CALLABLE real_t surfaceArea() const;
   /// \param r
-  /// \param tHit
-  /// \param isect
-  /// \param test_alpha_texture
   /// \return
-  HERMES_DEVICE_CALLABLE bool intersect(const Shape *shape, const Ray &r, real_t *tHit, SurfaceInteraction *isect,
-                                        bool test_alpha_texture) const;
+  HERMES_DEVICE_CALLABLE ShapeIntersectionReturn intersect(const Shape *shape,
+                                                           const Ray &r) const;
   /// \param r
-  /// \param test_alpha_texture
   /// \return
-  [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Shape *shape, const Ray &r, bool test_alpha_texture) const;
+  [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Shape *shape, const Ray &r) const;
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
-  HERMES_DEVICE_CALLABLE real_t radius() const;
+  [[nodiscard]] HERMES_DEVICE_CALLABLE real_t radius() const;
 private:
   real_t radius_;
   real_t zmin, zmax;

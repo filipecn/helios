@@ -19,24 +19,10 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file shape_tests.cpp
+///\file sampled_wave_spectrum.cpp
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-19
+///\date 2021-10-15
 ///
 ///\brief
 
-#include <catch2/catch.hpp>
-
-#include <helios/geometry/ray.h>
-#include <helios/shapes/sphere.h>
-#include <helios/base/shape.h>
-#include <helios/shapes/intersection.h>
-
-using namespace helios;
-
-TEST_CASE("bounds", "[geometry]") {
-  Ray ray({0, 0, 0}, {1, 0, 0});
-  bounds3 box{{2, -1, -1}, {4, 2, 2}};
-  real_t h0, h1;
-  REQUIRE(intersection::intersectP(box, ray, &h0, &h1));
-}
+#include "sampled_wave_lengths.h"

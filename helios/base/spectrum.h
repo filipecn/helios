@@ -5,11 +5,34 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <helios/core/mem.h>
 
 namespace helios {
+
+enum class SpectrumType {
+  BLACKBODY,
+  CONSTANT,
+  PIECEWISE_LINEAR,
+  DENSELY_SAMPLED,
+  RGBA_ALBEDO,
+  RGB_UNBOUNDED,
+  RGB_ILLUMINATION,
+  CUSTOM
+};
+
+// *********************************************************************************************************************
+//                                                                                                           Spectrum
+// *********************************************************************************************************************
+/// Spectrum base
+struct Spectrum {
+  mem::Ptr data_ptr;
+  SpectrumType type{SpectrumType::CUSTOM};
+  static constexpr int n_samples = 4;
+};
+
 /// Enum to distinguish between the RGB value that represents surface reflectance
 /// and the RGB value that represents an illuminant
-enum class SpectrumType { REFLECTANCE, ILLUMINANT };
+//enum class SpectrumType { REFLECTANCE, ILLUMINANT };
 
 static const int nCIESamples = 471;
 extern const real_t CIE_X[nCIESamples];
@@ -52,9 +75,9 @@ HERMES_DEVICE_CALLABLE inline void RGBToXYZ(const real_t rgb[3], real_t xyz[3]) 
 }
 
 // *********************************************************************************************************************
-//                                                                                               Coefficient Spectrum
+//                                                                                               Coefficient SpectrumOld
 // *********************************************************************************************************************
-/// Represents a spectrum using a particular number of samples (given by **nSpectrumSamples** parameter) of
+/// Represents a spectra using a particular number of samples (given by **nSpectrumSamples** parameter) of
 /// the SPD (_spectral power distribution_).
 template<int nSpectrumSamples> class CoefficientSpectrum {
 public:
@@ -130,7 +153,7 @@ HERMES_DEVICE_CALLABLE CoefficientSpectrum operator OP(const CoefficientSpectrum
   }
   /// \param l **[in | optional]** low (default = 0)
   /// \param h **[in | optional]** high (default = INFINITY)
-  /// \return CoefficientSpectrum the spectrum with values clamped to be in **[l, h]**
+  /// \return CoefficientSpectrum the spectra with values clamped to be in **[l, h]**
   [[nodiscard]] CoefficientSpectrum clamp(real_t l = 0, real_t h = hermes::Constants::real_infinity) const {
     CoefficientSpectrum r;
     for (int i = 0; i < nSpectrumSamples; i++)
@@ -169,9 +192,9 @@ real_t interpolateSpectrumSamples(const real_t *lambda, const real_t *vals,
                                   int n, real_t l);
 
 // *********************************************************************************************************************
-//                                                                                                       RGB Spectrum
+//                                                                                                       RGB SpectrumOld
 // *********************************************************************************************************************
-/// RGB spectrum implementation
+/// RGB spectra implementation
 class RGBSpectrum : public CoefficientSpectrum<3> {
 public:
   // *******************************************************************************************************************
@@ -187,15 +210,15 @@ public:
   /// \param xyz
   /// \param type
   /// \return
-  HERMES_DEVICE_CALLABLE static RGBSpectrum fromXYZ(const real_t xyz[3],
-                                                    SpectrumType type = SpectrumType::REFLECTANCE);
+  HERMES_DEVICE_CALLABLE static RGBSpectrum fromXYZ(const real_t xyz[3]);
+//                                                    SpectrumType type = SpectrumType::REFLECTANCE);
   /// \param rgb **[in]**
   /// \param type **[in | optional]** denotes wether the RGB values represents a
   /// surface reflectance or an illuminant. Converts from a given **rgb** values
   /// to a full SPD.
   /// \return RGBSpectrum
-  HERMES_DEVICE_CALLABLE  static RGBSpectrum fromRGB(const real_t rgb[3],
-                                                     SpectrumType type = SpectrumType::REFLECTANCE);
+  HERMES_DEVICE_CALLABLE  static RGBSpectrum fromRGB(const real_t rgb[3]);
+//                                                     SpectrumType type = SpectrumType::REFLECTANCE);
   // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
   // *******************************************************************************************************************
@@ -212,7 +235,7 @@ public:
   /// \param rgb **[out]**
   HERMES_DEVICE_CALLABLE void toRGB(real_t *rgb) const;
   HERMES_DEVICE_CALLABLE void toXYZ(float xyz[3]) const;
-  /// return RBG spectrum object
+  /// return RBG spectra object
   [[nodiscard]] HERMES_DEVICE_CALLABLE const RGBSpectrum &toRGBSpectrum() const;
   /// \return real_t  The y coordinate of XYZ color (closely related to _luminance_)
   [[nodiscard]] HERMES_DEVICE_CALLABLE real_t y() const;
@@ -221,8 +244,9 @@ public:
 static const int sampledLambdaStart = 400;
 static const int sampledLambdaEnd = 700;
 static const int nSpectralSamples = 60;
+/*
 // *********************************************************************************************************************
-//                                                                                                   Sampled Spectrum
+//                                                                                                   Sampled SpectrumOld
 // *********************************************************************************************************************
 /// Represent a SPD with uniformly spaced samples over an wavelength range.
 /// The wavelengths covers from 400 nm to 700 nm
@@ -270,7 +294,7 @@ public:
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
-  /// \return RBG spectrum object
+  /// \return RBG spectra object
   [[nodiscard]] RGBSpectrum toRGBSpectrum() const;
   /// \param xyz **[out]**
   void toXYZ(float xyz[3]) const;
@@ -289,12 +313,12 @@ private:
   static SampledSpectrum rgbIllum2SpectMagenta, rgbIllum2SpectYellow;
   static SampledSpectrum rgbIllum2SpectRed, rgbIllum2SpectGreen;
   static SampledSpectrum rgbIllum2SpectBlue;
-};
+};*/
 
-typedef RGBSpectrum Spectrum;
-//typedef SampledSpectrum Spectrum;
+typedef RGBSpectrum SpectrumOld;
+//typedef SampledSpectrum SpectrumOld;
 
-Spectrum lerp(real_t t, const Spectrum &a, const Spectrum &b);
+SpectrumOld lerp(real_t t, const SpectrumOld &a, const SpectrumOld &b);
 
 } // namespace helios
 

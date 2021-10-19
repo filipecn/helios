@@ -1,8 +1,3 @@
-//
-// Created by filipecn on 13/09/2021.
-//
-
-
 /// Copyright (c) 2021, FilipeCN.
 ///
 /// The MIT License (MIT)
@@ -24,34 +19,35 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file shapes.h
+///\file microfacet_distributions.h
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-09-13
+///\date 2021-10-13
 ///
 ///\brief
 
-#ifndef HELIOS_HELIOS_SHAPES_SHAPES_H
-#define HELIOS_HELIOS_SHAPES_SHAPES_H
+#ifndef HELIOS_HELIOS_SCATTERING_MICROFACET_DISTRIBUTIONS_H
+#define HELIOS_HELIOS_SCATTERING_MICROFACET_DISTRIBUTIONS_H
 
-#include <helios/core/shape.h>
-#include <helios/shapes/sphere.h>
+#include <helios/base/microfacet_distribution.h>
+#include <helios/scattering/trowbridge_reitz_distribution.h>
 
 namespace helios {
 
-#define CAST_SHAPE(SHAPE, PTR, CODE)                                                                                \
+#define CAST_MICROFACET_DISTRIBUTION(MICROFACET_DISTRIBUTION, PTR, CODE)                                                                          \
 {                                                                                                                   \
-  switch(SHAPE.type) {                                                                                              \
-    case ShapeType::SPHERE: { Sphere * PTR = (Sphere*)SHAPE.data_ptr.get(); CODE break; }                         \
+  switch(MICROFACET_DISTRIBUTION.type) {                                                                                           \
+    case MicrofacetDistributionType::TROWBRIDGE_REITZ: {                                                                                \
+                     TrowbridgeReitzDistribution * PTR = (TrowbridgeReitzDistribution*)MICROFACET_DISTRIBUTION.data_ptr.get(); CODE break; }         \
   }                                                                                                                 \
 }
 
-#define CAST_CONST_SHAPE(SHAPE, PTR, CODE)                                                                          \
+#define CAST_CONST_MICROFACET_DISTRIBUTION(MICROFACET_DISTRIBUTION, PTR, CODE)                                                                    \
 {                                                                                                                   \
-  switch(SHAPE.type) {                                                                                              \
-    case ShapeType::SPHERE: { const auto * PTR = (const Sphere*)SHAPE.data_ptr.get(); CODE break; }               \
+  switch(MICROFACET_DISTRIBUTION.type) {                                                                                           \
+    case MicrofacetDistributionType::TROWBRIDGE_REITZ: {                                                                                \
+         const DielectricMaterial * PTR = (const DielectricMaterial*)MICROFACET_DISTRIBUTION.data_ptr.get(); CODE break; }         \
   }                                                                                                                 \
 }
 
 }
-
-#endif //HELIOS_HELIOS_SHAPES_SHAPES_H
+#endif //HELIOS_HELIOS_SCATTERING_MICROFACET_DISTRIBUTIONS_H

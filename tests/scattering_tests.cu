@@ -27,16 +27,22 @@
 
 #include <catch2/catch.hpp>
 
-#include <helios/geometry/ray.h>
-#include <helios/shapes/sphere.h>
-#include <helios/base/shape.h>
-#include <helios/shapes/intersection.h>
+#include <helios/scattering/bxdfs.h>
+#include <helios/scattering/microfacet_distributions.h>
 
 using namespace helios;
 
-TEST_CASE("bounds", "[geometry]") {
-  Ray ray({0, 0, 0}, {1, 0, 0});
-  bounds3 box{{2, -1, -1}, {4, 2, 2}};
-  real_t h0, h1;
-  REQUIRE(intersection::intersectP(box, ray, &h0, &h1));
+TEST_CASE("DielectricBxDF") {
+  mem::init(1024);
+  auto data = mem::allocate<DielectricBxDF>();
+  auto bxdf = DielectricBxDF::createBxDF(data);
+  CAST_BXDF(bxdf, ptr, /**/)
+}
+
+TEST_CASE("TrowbridgeReitzDistribution") {
+  mem::init(1024);
+  auto data = mem::allocate<TrowbridgeReitzDistribution>();
+  auto mfd = TrowbridgeReitzDistribution::createMFD(data);
+  CAST_MICROFACET_DISTRIBUTION(mfd, ptr,
+                               ptr->D(hermes::vec3(1.f, 1.f, 1.f));)
 }

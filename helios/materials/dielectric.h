@@ -19,70 +19,59 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file point.h
+///\file dielectric.h
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-12
+///\date 2021-10-13
 ///
 ///\brief
 
-#ifndef HELIOS_LIGHTS_POINT_H
-#define HELIOS_LIGHTS_POINT_H
+#ifndef HELIOS_HELIOS_MATERIALS_DIELECTRIC_H
+#define HELIOS_HELIOS_MATERIALS_DIELECTRIC_H
 
-#include <helios/base/spectrum.h>
-#include <helios/base/light.h>
-#include <helios/core/mem.h>
+#include <helios/base/bxdf.h>
 
 namespace helios {
 
 // *********************************************************************************************************************
-//                                                                                                         PointLight
+//                                                                                                 DielectricMaterial
 // *********************************************************************************************************************
-/// Represents an isotropic point light source that emits the same amount of light in all directions
-class PointLight {
+/// Dielectric Material
+class DielectricMaterial {
 public:
   // *******************************************************************************************************************
   //                                                                                                   STATIC METHODS
   // *******************************************************************************************************************
-  ///
-  /// \param l2w
-  /// \param data_ptr
-  /// \return
-  static Light createLight(const hermes::point3 &world_position, mem::Ptr data_ptr);
+  static Material create(mem::Ptr data_ptr) {
+    return {
+        .data_ptr = data_ptr,
+        .type = MaterialType::DIELECTRIC
+    };
+  }
+  template<class Allocator, class ...Args>
+  static Material create(Allocator allocator, Args &&... params) {
+    return {
+        .data_ptr = allocator.template allocate<DielectricMaterial>(std::forward<Args>(params)...),
+        .type = MaterialType::DIELECTRIC
+    };
+  }
+
   // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
   // *******************************************************************************************************************
-  PointLight();
   ///
-  /// \param light
-  /// \param I
-  PointLight(const Light &light, /*const MediumInterface,*/ const SpectrumOld &I);
-  ~PointLight();
-  // *******************************************************************************************************************
-  //                                                                                                          METHODS
-  // *******************************************************************************************************************
-  [[nodiscard]] HERMES_DEVICE_CALLABLE SpectrumOld Le(const RayDifferential &ray) const { return SpectrumOld(0.f); }
-  ///
-  /// \param ref
-  /// \param u
-  /// \param wi
-  /// \param pdf
-  /// \param vis
-  /// \return
-  HERMES_DEVICE_CALLABLE SpectrumOld sampleLi(const Interaction &ref,
-                                              const hermes::point2 &u,
-                                              hermes::vec3 *wi,
-                                              real_t *pdf,
-                                              VisibilityTester *vis) const;
-  /// \return total power emitted by this light
-  [[nodiscard]] HERMES_DEVICE_CALLABLE SpectrumOld power() const;
-  // *******************************************************************************************************************
-  //                                                                                                    PUBLIC FIELDS
-  // *******************************************************************************************************************
+  /// \param eta
+  /// \param remap_roughness
+  HERMES_DEVICE_CALLABLE DielectricMaterial(Spectrum eta, bool remap_roughness) : remap_roughness_(remap_roughness),
+                                                                                  eta_(eta) {}
+  HERMES_DEVICE_CALLABLE BxDF bxdf() { return {}; }
 private:
-  hermes::point3 p_light_;
-  SpectrumOld I_;
+//  Image *normalMap;
+//  FloatTexture displacement;
+//  FloatTexture uRoughness, vRoughness;
+  bool remap_roughness_;
+  Spectrum eta_;
 };
 
 }
 
-#endif //HELIOS_HELIOS_LIGHTS_POINT_H
+#endif //HELIOS_HELIOS_MATERIALS_DIELECTRIC_H

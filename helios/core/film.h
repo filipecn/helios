@@ -2,7 +2,7 @@
 #define HELIOS_CORE_FILM_H
 
 #include <helios/core/filter.h>
-#include <helios/core/spectrum.h>
+#include <helios/base/spectrum.h>
 #include <helios/geometry/bounds.h>
 #include <hermes/common/index.h>
 #include <hermes/storage/array.h>
@@ -12,7 +12,7 @@ namespace helios {
 
 /// Pixel structure stored in film tiles
 struct FilmTilePixel {
-  Spectrum contrib_sum = 0.f;       //!< sum of weighted contributions from pixel samples
+  SpectrumOld contrib_sum = 0.f;       //!< sum of weighted contributions from pixel samples
   real_t filter_weight_sum = 0.f;   //!< sum of filter weights
 };
 
@@ -41,7 +41,7 @@ public:
   /// \param p sample position
   /// \param L sample's radiance
   /// \param sample_weight sample's filter weight
-  HERMES_DEVICE_CALLABLE void addSample(const hermes::point2 &p, const Spectrum &L, real_t sample_weight = 1.);
+  HERMES_DEVICE_CALLABLE void addSample(const hermes::point2 &p, const SpectrumOld &L, real_t sample_weight = 1.);
   /// \param p pixel coordinates with respect to overall image
   /// \return FilmTilePixel& reference to pixel inside tile
   HERMES_DEVICE_CALLABLE FilmTilePixel &getPixel(const hermes::index2 &p);
@@ -135,11 +135,11 @@ public:
   HERMES_DEVICE_FUNCTION void mergeFilmTile(const FilmTile &tile);
   /// Sets the entire image
   /// \param img pixel's XYZ values
-  void setImage(const Spectrum *img) const;
+  void setImage(const SpectrumOld *img) const;
   /// Splats contributions to arbitrary pixels_
   /// \param p position
-  /// \param v spectrum data
-  void addSplat(const hermes::point2 &p, const Spectrum &v);
+  /// \param v spectra data
+  void addSplat(const hermes::point2 &p, const SpectrumOld &v);
 
   HERMES_DEVICE_FUNCTION  Film &film();
 
