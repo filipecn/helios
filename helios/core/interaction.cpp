@@ -1,32 +1,27 @@
-// Created by filipecn on 2018-12-06.
-/*
- * Copyright (c) 2018 FilipeCN
- *
- * The MIT License (MIT)
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- */
+///  Copyright (c) 2018 FilipeCN
+///
+///  The MIT License (MIT)
+///
+///  Permission is hereby granted, free of charge, to any person obtaining a copy
+///  of this software and associated documentation files (the "Software"), to deal
+///  in the Software without restriction, including without limitation the rights
+///  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+///  copies of the Software, and to permit persons to whom the Software is
+///  furnished to do so, subject to the following conditions:
+///
+///  The above copyright notice and this permission notice shall be included in
+///  all copies or substantial portions of the Software.
+///  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+///  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+///  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+///  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+///  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+///  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+///  THE SOFTWARE.
+
 #include <helios/common/globals.h>
 #include <helios/core/interaction.h>
-#include <helios/base/shape.h>
 #include <helios/geometry/utils.h>
-#include <helios/materials.h>
 
 using namespace hermes;
 
@@ -42,6 +37,12 @@ HERMES_DEVICE_CALLABLE Interaction::Interaction(
       n(normal) /*TODO mediumInterface(mediumInterface)*/ {}
 
 HERMES_DEVICE_CALLABLE Interaction::Interaction(const point3 &point, real_t time) : p(point), time(time) {}
+HERMES_DEVICE_CALLABLE Interaction::Interaction(hermes::point3i pi,
+                                                hermes::normal3 n,
+                                                hermes::point2 uv,
+                                                hermes::vec3 wo,
+                                                real_t time)
+    : pi(pi), n(n), uv(uv), wo(hermes::normalize(wo)), time(time) {}
 
 HERMES_DEVICE_CALLABLE Ray Interaction::spawnRay(const vec3 &d) const {
   point3 o = Ray::offsetRayOrigin(p, pError, n, d);
@@ -65,8 +66,8 @@ HERMES_DEVICE_CALLABLE SurfaceInteraction::SurfaceInteraction(
     const vec3 &outgoingDirection, const vec3 &dpdu, const vec3 &dpdv,
     const normal3 &dndu, const normal3 &dndv, real_t t)
     : Interaction(point, normal3(normalize(cross(dpdu, dpdv))), pointError,
-                              outgoingDirection, t),
-                              dpdu(dpdu), dpdv(dpdv), dndu(dndu), dndv(dndv) {
+                  outgoingDirection, t),
+      dpdu(dpdu), dpdv(dpdv), dndu(dndu), dndv(dndv) {
   // initialize shading geometry from true geometry
   shading.n = n;
   shading.dpdu = dpdu;
@@ -79,6 +80,34 @@ HERMES_DEVICE_CALLABLE SurfaceInteraction::SurfaceInteraction(
 //    interaction.n *= -1;
 //    shading.n *= -1;
 //  }
+}
+
+HERMES_DEVICE_CALLABLE SurfaceInteraction::SurfaceInteraction(hermes::point3i pi,
+                                                              hermes::point2 uv,
+                                                              hermes::vec3 wo,
+                                                              hermes::vec3 dpdu,
+                                                              hermes::vec3 dpdv,
+                                                              hermes::normal3 dndu,
+                                                              hermes::normal3 dndv,
+                                                              real_t time,
+                                                              bool flipNormal)
+    : Interaction(pi, hermes::normal3(hermes::normalize(hermes::cross(dpdu, dpdv))), uv, wo, time),
+      dpdu(dpdu),
+      dpdv(dpdv),
+      dndu(dndu),
+      dndv(dndv) {
+  // Initialize shading geometry from true geometry
+  shading.n = n;
+  shading.dpdu = dpdu;
+  shading.dpdv = dpdv;
+  shading.dndu = dndu;
+  shading.dndv = dndv;
+
+  // Adjust normal based on orientation and handedness
+  if (flipNormal) {
+    n *= -1;
+    shading.n *= -1;
+  }
 }
 
 HERMES_DEVICE_CALLABLE void SurfaceInteraction::setShadingGeometry(const vec3 &dpdus,
@@ -141,32 +170,6 @@ HERMES_DEVICE_CALLABLE void SurfaceInteraction::computeDifferentials(const RayDi
     dudx = dvdx = 0;
   if (!numeric::soveLinearSystem(A, By, &dudy, &dvdy))
     dudy = dvdy = 0;
-}
-
-HERMES_DEVICE_CALLABLE BSDF SurfaceInteraction::bsdf(const RayDifferential &ray) {
-  // compute differentials for intersection
-  computeDifferentials(ray);
-  // check if material exists
-  if (!material)
-    return {};
-  // TODO: normal & bump map
-  CAST_MATERIAL(material, material_ptr,
-
-  // construct bsdf from material
-//                using ConcreteMtl = typename std::remove_reference_t<decltype(*mtl)>;
-//                    using ConcreteBxDF = typename ConcreteMtl::BxDF;
-//                    if constexpr (std::is_same_v<ConcreteBxDF, void>)
-//                      return {};
-//                    else {
-//                      // Allocate memory for _ConcreteBxDF_ and return _BSDF_ for material
-//                      ConcreteBxDF *bxdf = scratchBuffer.Alloc<ConcreteBxDF>();
-//                      *bxdf = mtl->GetBxDF(texEval, ctx, lambda);
-//                      return BSDF(ctx.ns, ctx.dpdus, bxdf);
-//                    }
-//
-//                    return material_ptr->bsdf();
-  )
-  return {};
 }
 
 } // namespace helios

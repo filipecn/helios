@@ -44,8 +44,6 @@ public:
   // *******************************************************************************************************************
   //                                                                                                   STATIC METHODS
   // *******************************************************************************************************************
-  static Shape createShape(const hermes::Transform &o2w, mem::Ptr data_ptr);
-  static Shape createShape(mem::Ptr data_ptr, const hermes::point3 &center, real_t radius = 1.);
   HERMES_DEVICE_CALLABLE static Sphere unitSphere() {
     return Sphere(1, -1, 1, hermes::Constants::two_pi);
   }
@@ -65,13 +63,31 @@ public:
   [[nodiscard]] HERMES_DEVICE_CALLABLE bounds3 objectBound() const;
   /// \return
   [[nodiscard]] HERMES_DEVICE_CALLABLE real_t surfaceArea() const;
+  /// \param shape
+  /// \param r
+  /// \param t_max
+  /// \return
+  [[nodiscard]] HERMES_DEVICE_CALLABLE
+  QuadricIntersectionReturn intersectQuadric(const Shape *shape,
+                                             const Ray &r,
+                                             real_t t_max = hermes::Constants::real_infinity) const;
+  /// \param shape
+  /// \param isect
+  /// \param wo
+  /// \param time
+  /// \return
+  [[nodiscard]] HERMES_DEVICE_CALLABLE SurfaceInteraction interactionFromIntersection(const Shape *shape,
+                                                                                      const QuadricIntersection &isect,
+                                                                                      hermes::vec3 wo,
+                                                                                      real_t time) const;
   /// \param r
   /// \return
-  HERMES_DEVICE_CALLABLE ShapeIntersectionReturn intersect(const Shape *shape,
-                                                           const Ray &r) const;
+  HERMES_DEVICE_CALLABLE ShapeIntersectionReturn intersect(const Shape *shape, const Ray &r,
+                                                           real_t t_max = hermes::Constants::real_infinity) const;
   /// \param r
   /// \return
-  [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Shape *shape, const Ray &r) const;
+  [[nodiscard]] HERMES_DEVICE_CALLABLE bool intersectP(const Shape *shape, const Ray &r,
+                                                       real_t t_max = hermes::Constants::real_infinity) const;
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************

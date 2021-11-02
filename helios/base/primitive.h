@@ -106,7 +106,7 @@ public:
 {                                                                                                                   \
   switch(PRIMITIVE.type) {                                                                                          \
     case PrimitiveType::GEOMETRIC_PRIMITIVE: {                                                                      \
-        auto * PTR = (GeometricPrimitive*)PRIMITIVE.data_ptr.get(); CODE break; }                                   \
+        auto * PTR = PRIMITIVE.data_ptr.get<GeometricPrimitive>(); CODE break; }                                   \
   }                                                                                                                 \
 }
 
@@ -114,7 +114,7 @@ public:
 {                                                                                                                   \
   switch(PRIMITIVE.type) {                                                                                          \
     case PrimitiveType::GEOMETRIC_PRIMITIVE: {                                                                      \
-        auto * PTR = (const GeometricPrimitive*)PRIMITIVE.data_ptr.get(); CODE break; }                             \
+        auto * PTR = PRIMITIVE.data_ptr.get<GeometricPrimitive>(); CODE break; }                             \
   }                                                                                                                 \
 }
 

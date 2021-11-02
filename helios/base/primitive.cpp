@@ -60,7 +60,7 @@ HERMES_DEVICE_CALLABLE ShapeIntersectionReturn GeometricPrimitive::intersect(con
 HERMES_DEVICE_CALLABLE bool GeometricPrimitive::intersectP(const Ray &ray) const {
   bool intersected = false;
 
-  CAST_SHAPE(shape, shape_ptr,
+  CAST_CONST_SHAPE(shape, shape_ptr,
              intersected = shape_ptr->intersectP(&shape, ray);
   );
 

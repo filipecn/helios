@@ -32,13 +32,6 @@
 
 namespace helios {
 
-HERMES_DEVICE_CALLABLE MicrofacetDistribution TrowbridgeReitzDistribution::createMFD(mem::Ptr data_ptr) {
-  return {
-      .data_ptr = data_ptr,
-      .type = MicrofacetDistributionType::TROWBRIDGE_REITZ
-  };
-}
-
 HERMES_DEVICE_CALLABLE real_t TrowbridgeReitzDistribution::roughness2alpha(real_t roughness) {
 #if (defined(__CUDA__ARCH__) && __CUDA_ARCH__ > 0)
   return sqrtf(roughness);

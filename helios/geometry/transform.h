@@ -34,6 +34,15 @@
 
 namespace helios {
 
+/// \param t
+/// \param p
+/// \return
+HERMES_DEVICE_CALLABLE hermes::point3i transform(const hermes::Transform &t, const hermes::point3i &p);
+/// \param t
+/// \param p
+/// \return
+HERMES_DEVICE_CALLABLE hermes::vec3i transform(const hermes::Transform &t, const hermes::vec3i &p);
+
 /// Applies transform to a vector carrying error and computes its absolute error
 /// \param t transformation
 /// \param v vector

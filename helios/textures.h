@@ -29,49 +29,9 @@
 #define HELIOS_HELIOS_TEXTURES_TEXTURES_H
 
 #include <helios/base/texture.h>
-#include <helios/core/interaction.h>
 
 namespace helios {
 
-// TextureEvalContext Definition
-struct TextureEvalContext {
-  // TextureEvalContext Public Methods
-  TextureEvalContext() = default;
-  HERMES_DEVICE_CALLABLE
-  TextureEvalContext(const Interaction &intr) : p(intr.p), uv(intr.uv) {}
-  HERMES_DEVICE_CALLABLE
-  TextureEvalContext(const SurfaceInteraction &si)
-      : p(si.p),
-        dpdx(si.dpdx),
-        dpdy(si.dpdy),
-        n(si.n),
-        uv(si.uv),
-        dudx(si.dudx),
-        dudy(si.dudy),
-        dvdx(si.dvdx),
-        dvdy(si.dvdy),
-        faceIndex(si.face_index) {}
-  HERMES_DEVICE_CALLABLE
-  TextureEvalContext(hermes::point3 p, hermes::vec3 dpdx, hermes::vec3 dpdy, hermes::normal3 n, hermes::point2 uv,
-                     real_t dudx, real_t dudy, real_t dvdx, real_t dvdy, int faceIndex)
-      : p(p),
-        dpdx(dpdx),
-        dpdy(dpdy),
-        n(n),
-        uv(uv),
-        dudx(dudx),
-        dudy(dudy),
-        dvdx(dvdx),
-        dvdy(dvdy),
-        faceIndex(faceIndex) {}
-
-  hermes::point3 p;
-  hermes::vec3 dpdx, dpdy;
-  hermes::normal3 n;
-  hermes::point2 uv;
-  real_t dudx = 0, dudy = 0, dvdx = 0, dvdy = 0;
-  int faceIndex = 0;
-};
 }
 
 #endif //HELIOS_HELIOS_TEXTURES_TEXTURES_H

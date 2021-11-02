@@ -33,6 +33,8 @@
 
 namespace helios {
 
+class StackAllocator;
+
 /// Memory Manager Singleton
 /// This memory manager implements a Stack Allocator scheme where
 /// objects are allocated contiguously and it is not possible to
@@ -47,8 +49,12 @@ public:
     HERMES_DEVICE_CALLABLE Ptr();
     HERMES_DEVICE_CALLABLE Ptr(hermes::AddressIndex address_index);
     HERMES_DEVICE_CALLABLE explicit operator bool() const;
-    HERMES_DEVICE_CALLABLE  void *get();
-    [[nodiscard]] HERMES_DEVICE_CALLABLE const void *get() const;
+    template<typename T>
+    HERMES_DEVICE_CALLABLE  T *get() { return reinterpret_cast<T *>(ptr); }
+    template<typename T>
+    [[nodiscard]] HERMES_DEVICE_CALLABLE const T *get() const {
+      return reinterpret_cast<const T *>(ptr);
+    }
     void update();
     HERMES_DEVICE_CALLABLE void update(hermes::StackAllocatorView m);
     hermes::AddressIndex address_index;
@@ -74,6 +80,7 @@ public:
   /// \return
   static HeResult sendToGPU();
   static hermes::StackAllocatorView gpuView();
+  static StackAllocator allocator();
   //                                                                                                       allocation
   ///
   /// \tparam T
@@ -148,6 +155,20 @@ private:
 
   hermes::StackAllocator allocator_;
   hermes::DeviceStackAllocator d_allocator_;
+};
+
+class StackAllocator {
+public:
+  explicit StackAllocator(hermes::StackAllocatorView mem_view);
+
+  template<typename T, class... P>
+  mem::Ptr allocate(P &&... params) {
+    return mem::Ptr(mem_.push<T>(std::forward<P>(params)...));
+  }
+
+private:
+  hermes::StackAllocatorView mem_;
+
 };
 
 }

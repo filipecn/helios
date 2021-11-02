@@ -4,6 +4,7 @@ set(SOURCES
         common_tests.cu
         core_tests.cu
         geometry_tests.cu
+        material_tests.cu
         renderers_tests.cu
         sampling_tests.cu
         scattering_tests.cu

@@ -28,7 +28,11 @@
 #ifndef HELIOS_HELIOS_MATERIALS_DIELECTRIC_H
 #define HELIOS_HELIOS_MATERIALS_DIELECTRIC_H
 
-#include <helios/base/bxdf.h>
+#include <helios/scattering/bxdfs.h>
+#include <helios/materials/material_eval_context.h>
+#include <helios/spectra/sampled_wave_lengths.h>
+#include <helios/scattering/trowbridge_reitz_distribution.h>
+#include <helios/spectra.h>
 
 namespace helios {
 
@@ -39,23 +43,6 @@ namespace helios {
 class DielectricMaterial {
 public:
   // *******************************************************************************************************************
-  //                                                                                                   STATIC METHODS
-  // *******************************************************************************************************************
-  static Material create(mem::Ptr data_ptr) {
-    return {
-        .data_ptr = data_ptr,
-        .type = MaterialType::DIELECTRIC
-    };
-  }
-  template<class Allocator, class ...Args>
-  static Material create(Allocator allocator, Args &&... params) {
-    return {
-        .data_ptr = allocator.template allocate<DielectricMaterial>(std::forward<Args>(params)...),
-        .type = MaterialType::DIELECTRIC
-    };
-  }
-
-  // *******************************************************************************************************************
   //                                                                                                     CONSTRUCTORS
   // *******************************************************************************************************************
   ///
@@ -63,7 +50,33 @@ public:
   /// \param remap_roughness
   HERMES_DEVICE_CALLABLE DielectricMaterial(Spectrum eta, bool remap_roughness) : remap_roughness_(remap_roughness),
                                                                                   eta_(eta) {}
-  HERMES_DEVICE_CALLABLE BxDF bxdf() { return {}; }
+  template<typename Allocator, typename TextureEvaluator>
+  HERMES_DEVICE_CALLABLE BxDF bxdf(Allocator allocator, /*TextureEvaluator tex_ctx, MaterialEvalContext mat_ctx,*/
+                                   SampledWaveLengths &lambda) const {
+    // Compute index of refraction for dielectric material
+    real_t sampledEta = 0;
+    CAST_CONST_SPECTRUM(eta_, ptr, sampledEta = (*ptr)(lambda[0]);)
+
+    if (eta_.type != SpectrumType::CONSTANT)
+      lambda.terminateSecondary();
+    // Handle edge case in case lambda[0] is beyond the wavelengths stored by the
+    // Spectrum.
+    if (sampledEta == 0)
+      sampledEta = 1;
+
+    // Create microfacet distribution for dielectric material
+    // TODO real_t urough = texEval(uRoughness, ctx), vrough = texEval(vRoughness, ctx);
+    real_t urough = 1, vrough = 1;
+    if (remap_roughness_) {
+      urough = TrowbridgeReitzDistribution::roughness2alpha(urough);
+      vrough = TrowbridgeReitzDistribution::roughness2alpha(vrough);
+    }
+    TrowbridgeReitzDistribution distrib(urough, vrough);
+
+    // Return BSDF for dielectric material
+    return BxDFs::create<DielectricBxDF>(allocator, sampledEta, distrib);
+  }
+
 private:
 //  Image *normalMap;
 //  FloatTexture displacement;

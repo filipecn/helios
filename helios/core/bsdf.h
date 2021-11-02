@@ -29,7 +29,7 @@
 #define HELIOS_CORE_BSDF_H
 
 #include <helios/base/bxdf.h>
-#include <hermes/geometry/vector.h>
+#include <hermes/geometry/normal.h>
 
 namespace helios {
 

@@ -19,39 +19,19 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file shape_tests.cpp
+///\file material_eval_context.cpp
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-19
+///\date 2021-10-21
 ///
 ///\brief
 
-#include <catch2/catch.hpp>
+#include <helios/materials/material_eval_context.h>
+#include <helios/core/interaction.h>
 
-#include <helios/geometry/ray.h>
-#include <helios/shapes.h>
-#include <helios/shapes/intersection.h>
+namespace helios {
 
-using namespace helios;
+HERMES_DEVICE_CALLABLE
+MaterialEvalContext::MaterialEvalContext(const SurfaceInteraction &si)
+    : TextureEvalContext(si), wo(si.wo), ns(si.shading.n), dpdus(si.shading.dpdu) {}
 
-TEST_CASE("Sphere") {
-  SECTION("shapes") {
-    mem::init(1024);
-    auto s = Shapes::create<Sphere>(mem::allocator(), Sphere::unitSphere());
-    REQUIRE(s.bounds.lower == hermes::point3(-1, -1, -1));
-    REQUIRE(s.bounds.upper == hermes::point3(1, 1, 1));
-    auto s2 = Shapes::createFrom<Sphere>(s.data_ptr, {0, 0, 0}, {2, 2, 2});
-    REQUIRE(s2.bounds.lower == hermes::point3(-2, -2, -2));
-    REQUIRE(s2.bounds.upper == hermes::point3(2, 2, 2));
-    auto r = Ray({-2, 0, 0}, {1, 0, 0});
-    CAST_SHAPE(s, ptr,
-               REQUIRE(ptr->intersectP(&s, r));
-    )
-  }//
-}
-
-TEST_CASE("bounds", "[geometry]") {
-  Ray ray({0, 0, 0}, {1, 0, 0});
-  bounds3 box{{2, -1, -1}, {4, 2, 2}};
-  real_t h0, h1;
-  REQUIRE(intersection::intersectP(box, ray, &h0, &h1));
 }

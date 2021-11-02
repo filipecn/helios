@@ -29,8 +29,27 @@
 
 #include <helios/scattering/bxdfs.h>
 #include <helios/scattering/microfacet_distributions.h>
+#include <helios/materials.h>
+#include <helios/shapes.h>
 
 using namespace helios;
+
+TEST_CASE("interaction") {
+  mem::init(1024);
+  auto s = Shapes::create<Sphere>(mem::allocator(), Sphere::unitSphere());
+  auto r = Ray({2, -1, 0}, hermes::normalize(hermes::vec3(-1, 1, 0)));
+  ShapeIntersectionReturn si;
+  CAST_SHAPE(s, ptr,
+             auto isect = ptr->intersectQuadric(&s, r);
+                 HERMES_LOG_VARIABLE((int) ((bool) isect))
+                 HERMES_LOG_VARIABLE(isect->t_hit)
+                 REQUIRE(ptr->intersectP(&s, r));
+                 si = ptr->intersect(&s, r);
+  )
+  REQUIRE((bool) si);
+  auto m = Materials::create<DielectricMaterial>(mem::allocator(), Spectrum(), false);
+
+}
 
 TEST_CASE("DielectricBxDF") {
   mem::init(1024);
@@ -41,8 +60,7 @@ TEST_CASE("DielectricBxDF") {
 
 TEST_CASE("TrowbridgeReitzDistribution") {
   mem::init(1024);
-  auto data = mem::allocate<TrowbridgeReitzDistribution>();
-  auto mfd = TrowbridgeReitzDistribution::createMFD(data);
+  auto mfd = MicrofacetDistributions::create<TrowbridgeReitzDistribution>(mem::allocator());
   CAST_MICROFACET_DISTRIBUTION(mfd, ptr,
                                ptr->D(hermes::vec3(1.f, 1.f, 1.f));)
 }

@@ -29,6 +29,10 @@
 
 namespace helios {
 
+StackAllocator::StackAllocator(hermes::StackAllocatorView mem_view) : mem_(mem_view) {
+
+}
+
 HERMES_DEVICE_CALLABLE mem::Ptr::Ptr() {}
 
 HERMES_DEVICE_CALLABLE mem::Ptr::Ptr(hermes::AddressIndex address_index) : address_index(address_index) {
@@ -36,14 +40,6 @@ HERMES_DEVICE_CALLABLE mem::Ptr::Ptr(hermes::AddressIndex address_index) : addre
 #else
   update();
 #endif
-}
-
-HERMES_DEVICE_CALLABLE void *mem::Ptr::get() {
-  return ptr;
-}
-
-HERMES_DEVICE_CALLABLE const void *mem::Ptr::get() const {
-  return ptr;
 }
 
 void mem::Ptr::update() {
@@ -73,6 +69,10 @@ hermes::StackAllocatorView mem::gpuView() {
 
 std::size_t mem::availableSize() {
   return mem::get().allocator_.availableSizeInBytes();
+}
+
+StackAllocator mem::allocator() {
+  return StackAllocator(mem::get().allocator_.view());
 }
 
 }

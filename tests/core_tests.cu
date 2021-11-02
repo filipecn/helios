@@ -111,7 +111,7 @@ TEST_CASE("Raw Scene") {
 
   // create 5 identical shapes (sphere)
   for (int i = 0; i < 5; ++i)
-    shapes[i] = Sphere::createShape(hermes::Transform(), sphere_shape_data);
+    shapes[i] = Shapes::createFrom<Sphere>(sphere_shape_data);
 
   // create 1 geometrical primitive for each shape
   for (int i = 0; i < 5; ++i) {
@@ -177,7 +177,7 @@ TEST_CASE("Scene") {
   scene.addLight(PointLight::createLight({0, 1, 0}, point_light_data));
   scene.addLight(PointLight::createLight({0, 0, 1}, point_light_data));
   // add 1 shape
-  auto *sphere_shape = scene.addShape(Sphere::createShape(hermes::Transform(), sphere_shape_data));
+  auto *sphere_shape = scene.addShape(Shapes::createFrom<Sphere>(sphere_shape_data));
   // add 2 geometrical primitives that use the same shape
   scene.addPrimitive(GeometricPrimitive::createPrimitive(sphere_shape));
   scene.addPrimitive(GeometricPrimitive::createPrimitive(sphere_shape));
@@ -188,10 +188,4 @@ TEST_CASE("Scene") {
   hermes::UnifiedArray<bool> result(1);
   HERMES_CUDA_LAUNCH_AND_SYNC((1), checkSceneElements_k, result.data(), scene.view())
   REQUIRE(result[0]);
-}
-
-TEST_CASE("Reflection Functions") {
-  SECTION("BxDF") {
-    BxDF bxdf;
-  }
 }

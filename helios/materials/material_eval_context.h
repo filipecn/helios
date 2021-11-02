@@ -19,39 +19,31 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 ///
-///\file shape_tests.cpp
+///\file material_eval_context.h
 ///\author FilipeCN (filipedecn@gmail.com)
-///\date 2021-08-19
+///\date 2021-10-20
 ///
 ///\brief
 
-#include <catch2/catch.hpp>
+#ifndef HELIOS_HELIOS_MATERIALS_MATERIAL_EVAL_CONTEXT_H
+#define HELIOS_HELIOS_MATERIALS_MATERIAL_EVAL_CONTEXT_H
 
-#include <helios/geometry/ray.h>
-#include <helios/shapes.h>
-#include <helios/shapes/intersection.h>
+#include <helios/textures/texture_eval_context.h>
 
-using namespace helios;
+namespace helios {
 
-TEST_CASE("Sphere") {
-  SECTION("shapes") {
-    mem::init(1024);
-    auto s = Shapes::create<Sphere>(mem::allocator(), Sphere::unitSphere());
-    REQUIRE(s.bounds.lower == hermes::point3(-1, -1, -1));
-    REQUIRE(s.bounds.upper == hermes::point3(1, 1, 1));
-    auto s2 = Shapes::createFrom<Sphere>(s.data_ptr, {0, 0, 0}, {2, 2, 2});
-    REQUIRE(s2.bounds.lower == hermes::point3(-2, -2, -2));
-    REQUIRE(s2.bounds.upper == hermes::point3(2, 2, 2));
-    auto r = Ray({-2, 0, 0}, {1, 0, 0});
-    CAST_SHAPE(s, ptr,
-               REQUIRE(ptr->intersectP(&s, r));
-    )
-  }//
+// MaterialEvalContext Definition
+struct MaterialEvalContext : public TextureEvalContext {
+  // MaterialEvalContext Public Methods
+  MaterialEvalContext() = default;
+  HERMES_DEVICE_CALLABLE
+  MaterialEvalContext(const SurfaceInteraction &si);
+
+  hermes::vec3 wo;
+  hermes::normal3 ns;
+  hermes::vec3 dpdus;
+};
+
 }
 
-TEST_CASE("bounds", "[geometry]") {
-  Ray ray({0, 0, 0}, {1, 0, 0});
-  bounds3 box{{2, -1, -1}, {4, 2, 2}};
-  real_t h0, h1;
-  REQUIRE(intersection::intersectP(box, ray, &h0, &h1));
-}
+#endif //HELIOS_HELIOS_MATERIALS_MATERIAL_EVAL_CONTEXT_H

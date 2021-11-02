@@ -75,7 +75,7 @@ public:
   // *******************************************************************************************************************
   hermes::point3 o;     //!< ray's origin
   hermes::vec3 d;       //!< ray's direction
-  mutable real_t max_t; //!< max parametric distance allowed
+  mutable real_t max_t; //!< max parametric distance allowed // TODO remove this!
   //  const Medium* medium; //!< medium containing **o**
   real_t time; //!< current parametric distance
 };

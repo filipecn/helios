@@ -86,6 +86,7 @@ set(HEADERS
         helios/integrators/whitted_integrator.h
         helios/lights/point.h
         helios/materials/dielectric.h
+        helios/materials/material_eval_context.h
         helios/samplers/pixel_sampler.h
         helios/samplers/sample_pool.h
         helios/samplers/stratified_sampler.h
@@ -99,6 +100,7 @@ set(HEADERS
         helios/spectra/blackbody_spectrum.h
         helios/spectra/sampled_spectrum.h
         helios/spectra/sampled_wave_lengths.h
+        helios/textures/texture_eval_context.h
         helios/materials.h
         helios/shapes.h
         helios/spectra.h
@@ -126,6 +128,7 @@ set(SOURCES
         helios/geometry/transform.cpp
         helios/geometry/io.cpp
         helios/lights/point.cpp
+        helios/materials/material_eval_context.cpp
         helios/samplers/pixel_sampler.cpp
         helios/samplers/sample_pool.cpp
         helios/samplers/stratified_sampler.cu
@@ -136,6 +139,7 @@ set(SOURCES
         helios/shapes/sphere.cu
         helios/spectra/sampled_spectrum.cpp
         helios/spectra/sampled_wave_lengths.cpp
+        helios/textures/texture_eval_context.cpp
         )
 
 ##########################################

@@ -33,21 +33,21 @@ namespace helios {
 
 HERMES_DEVICE_CALLABLE const bounds3 &Scene::View::worldBound() const {
   if (aggregate_.type == AggregateType::LIST)
-    return reinterpret_cast<const ListAggregate::View *>(aggregate_.data_ptr.get())->worldBound();
+    return aggregate_.data_ptr.get<ListAggregate::View>()->worldBound();
   return {};
 }
 
 HERMES_DEVICE_CALLABLE ShapeIntersectionReturn Scene::View::intersect(const Ray &ray) const {
   // TODO check ray direction not null
   if (aggregate_.type == AggregateType::LIST)
-    return reinterpret_cast<const ListAggregate::View *>(aggregate_.data_ptr.get())->intersect(ray);
+    return aggregate_.data_ptr.get<ListAggregate::View>()->intersect(ray);
   return {};
 }
 
 HERMES_DEVICE_CALLABLE bool Scene::View::intersectP(const Ray &ray) const {
   // TODO check ray direction not null
   if (aggregate_.type == AggregateType::LIST)
-    return reinterpret_cast<const ListAggregate::View *>(aggregate_.data_ptr.get())->intersectP(ray);
+    return aggregate_.data_ptr.get<ListAggregate::View>()->intersectP(ray);
   return false;
 }
 
@@ -74,7 +74,7 @@ HERMES_CUDA_KERNEL(updatePointers)(hermes::ArrayView<Primitive> a, hermes::Stack
 
 HeResult Scene::prepare() {
   // chose default struct if none
-  if (!aggregate_.data_ptr.get()) {
+  if (!aggregate_) {
     aggregate_ = {
         .data_ptr = mem::allocate<ListAggregate>(),
         .type = AggregateType::LIST
@@ -91,9 +91,8 @@ HeResult Scene::prepare() {
   d_primitives_ = primitives_;
 
   // setup acceleration structure
-  reinterpret_cast<ListAggregate *>(aggregate_.data_ptr.get())->init(primitives_, d_primitives_.constView());
-  *reinterpret_cast<ListAggregate::View *>(aggregate_view_.data_ptr.get()) =
-      reinterpret_cast<ListAggregate *>(aggregate_.data_ptr.get())->view();
+  aggregate_.data_ptr.get<ListAggregate>()->init(primitives_, d_primitives_.constView());
+  *aggregate_view_.data_ptr.get<ListAggregate::View>() = aggregate_.data_ptr.get<ListAggregate>()->view();
 
   // send resources memory to gpu
   mem::sendToGPU();

@@ -8,24 +8,6 @@ using namespace hermes;
 
 namespace helios {
 
-Shape Sphere::createShape(const hermes::Transform &o2w, mem::Ptr data_ptr) {
-  const auto &sphere = *mem::get<Sphere>(data_ptr);
-  return {
-      .o2w = o2w,
-      .w2o = inverse(o2w),
-      .bounds = o2w(sphere.objectBound()),
-      .data_ptr = data_ptr,
-      .type = ShapeType::SPHERE,
-      .flags = shape_flags::NONE
-  };
-}
-
-Shape Sphere::createShape(mem::Ptr data_ptr, const point3 &center, real_t radius) {
-  auto o2w = hermes::Transform::translate(hermes::vec3(center))
-      * hermes::Transform::scale(radius, radius, radius);
-  return createShape(o2w, data_ptr);
-}
-
 HERMES_DEVICE_CALLABLE Sphere::Sphere(real_t rad, real_t z0, real_t z1, real_t pm) : radius_{rad}, phi_max{pm} {
   zmin = Numbers::clamp(fminf(z0, z1), -radius_, radius_);
   radius_ = rad;
@@ -40,7 +22,149 @@ HERMES_DEVICE_CALLABLE bbox3 Sphere::objectBound() const {
   return bbox3(point3(-radius_, -radius_, zmin), point3(radius_, radius_, zmax));
 }
 
-HERMES_DEVICE_CALLABLE ShapeIntersectionReturn Sphere::intersect(const Shape *shape, const Ray &r) const {
+HERMES_DEVICE_CALLABLE QuadricIntersectionReturn Sphere::intersectQuadric(const Shape *shape,
+                                                                          const Ray &r,
+                                                                          real_t t_max) const {
+  real_t phi;
+  hermes::point3 pHit;
+  // Transform _Ray_ origin and direction to object space
+  hermes::point3i oi = transform(shape->w2o, hermes::point3i(r.o.x, r.o.y, r.o.z));
+  hermes::vec3i di = transform(shape->w2o, hermes::vec3i(r.d.x, r.d.y, r.d.z));
+
+  // Solve quadratic equation to compute sphere _t0_ and _t1_
+  hermes::Interval<real_t> t0, t1;
+  // Compute sphere quadratic coefficients
+  hermes::Interval<real_t> a = di.x.sqr() + di.y.sqr() + di.z.sqr();
+  hermes::Interval<real_t> b = 2.f * (di.x * oi.x + di.y * oi.y + di.z * oi.z);
+  hermes::Interval<real_t> c = oi.x.sqr() + oi.y.sqr() + oi.z.sqr() - hermes::Interval<real_t>(radius_).sqr();
+
+  // Compute sphere quadratic discriminant _discrim_
+  hermes::vec3i v(oi - b / (2.f * a) * di);
+  hermes::Interval<real_t> length = v.length();
+  hermes::Interval<real_t> discrim =
+      4.f * a * (hermes::Interval<real_t>(radius_) + length) * (hermes::Interval<real_t>(radius_) - length);
+  if (discrim.low < 0)
+    return {};
+
+  // Compute quadratic $t$ values
+  hermes::Interval<real_t> rootDiscrim = discrim.sqrt();
+  hermes::Interval<real_t> q;
+  if ((real_t) b < 0)
+    q = -.5f * (b - rootDiscrim);
+  else
+    q = -.5f * (b + rootDiscrim);
+  t0 = q / a;
+  t1 = c / q;
+  // Swap quadratic $t$ values so that _t0_ is the lesser
+  if (t0.low > t1.low)
+    hermes::Numbers::swap(t0, t1);
+
+  // Check quadric shape _t0_ and _t1_ for nearest intersection
+  if (t0.high > t_max || t1.low <= 0)
+    return {};
+  hermes::Interval<real_t> tShapeHit = t0;
+  if (tShapeHit.low <= 0) {
+    tShapeHit = t1;
+    if (tShapeHit.high > t_max)
+      return {};
+  }
+
+  // Compute sphere hit position and $\phi$
+  pHit = hermes::point3(oi) + (real_t) tShapeHit * hermes::vec3(di);
+  // Refine sphere intersection point
+  pHit *= radius_ / hermes::distance(pHit, hermes::point3(0, 0, 0));
+
+  if (pHit.x == 0 && pHit.y == 0)
+    pHit.x = 1e-5f * radius_;
+  phi = std::atan2(pHit.y, pHit.x);
+  if (phi < 0)
+    phi += 2 * hermes::Constants::pi;
+
+  // Test sphere intersection against clipping parameters
+  if ((zmin > -radius_ && pHit.z < zmin) || (zmax < radius_ && pHit.z > zmax) ||
+      phi > phi_max) {
+    if (tShapeHit == t1)
+      return {};
+    if (t1.high > t_max)
+      return {};
+    tShapeHit = t1;
+    // Compute sphere hit position and $\phi$
+    pHit = hermes::point3(oi) + (real_t) tShapeHit * hermes::vec3(di);
+    // Refine sphere intersection point
+    pHit *= radius_ / hermes::distance(pHit, hermes::point3(0, 0, 0));
+
+    if (pHit.x == 0 && pHit.y == 0)
+      pHit.x = 1e-5f * radius_;
+    phi = std::atan2(pHit.y, pHit.x);
+    if (phi < 0)
+      phi += 2 * hermes::Constants::pi;
+
+    if ((zmin > -radius_ && pHit.z < zmin) || (zmax < radius_ && pHit.z > zmax) ||
+        phi > phi_max)
+      return {};
+  }
+
+  // Return _QuadricIntersection_ for sphere intersection
+  return QuadricIntersection{real_t(tShapeHit), pHit, phi};
+}
+
+HERMES_DEVICE_CALLABLE SurfaceInteraction Sphere::interactionFromIntersection(const Shape *shape,
+                                                                              const QuadricIntersection &isect,
+                                                                              hermes::vec3 wo,
+                                                                              real_t time) const {
+  hermes::point3 pHit = isect.p_obj;
+  real_t phi = isect.phi;
+  // Find parametric representation of sphere hit
+  real_t u = phi / phi_max;
+  real_t cosTheta = pHit.z / radius_;
+  real_t theta = hermes::Trigonometry::safe_acos(cosTheta);
+  real_t v = (theta - theta_min) / (theta_max - theta_min);
+  // Compute sphere $\dpdu$ and $\dpdv$
+  real_t zRadius = std::sqrt(hermes::Numbers::sqr(pHit.x) + hermes::Numbers::sqr(pHit.y));
+  real_t cosPhi = pHit.x / zRadius, sinPhi = pHit.y / zRadius;
+  hermes::vec3 dpdu(-phi_max * pHit.y, phi_max * pHit.x, 0);
+  real_t sinTheta = hermes::Numbers::safe_sqrt(1 - hermes::Numbers::sqr(cosTheta));
+  hermes::vec3 dpdv = (theta_max - theta_min) *
+      hermes::vec3(pHit.z * cosPhi, pHit.z * sinPhi, -radius_ * sinTheta);
+
+  // Compute sphere $\dndu$ and $\dndv$
+  hermes::vec3 d2Pduu = -phi_max * phi_max * hermes::vec3(pHit.x, pHit.y, 0);
+  hermes::vec3 d2Pduv =
+      (theta_max - theta_min) * pHit.z * phi_max * hermes::vec3(-sinPhi, cosPhi, 0.);
+  hermes::vec3 d2Pdvv = -hermes::Numbers::sqr(theta_max - theta_min) * hermes::vec3(pHit.x, pHit.y, pHit.z);
+  // Compute coefficients for fundamental forms
+  real_t E = hermes::dot(dpdu, dpdu), F = hermes::dot(dpdu, dpdv), G = hermes::dot(dpdv, dpdv);
+  hermes::vec3 n = hermes::normalize(hermes::cross(dpdu, dpdv));
+  real_t e = hermes::dot(n, d2Pduu), f = hermes::dot(n, d2Pduv), g = hermes::dot(n, d2Pdvv);
+
+  // Compute $\dndu$ and $\dndv$ from fundamental form coefficients
+  real_t EGF2 = hermes::Numbers::differenceOfProducts(E, G, F, F);
+  real_t invEGF2 = (EGF2 == 0) ? real_t(0) : 1 / EGF2;
+  hermes::normal3 dndu =
+      hermes::normal3((f * F - e * G) * invEGF2 * dpdu + (e * F - f * E) * invEGF2 * dpdv);
+  hermes::normal3 dndv =
+      hermes::normal3((g * F - f * G) * invEGF2 * dpdu + (f * F - g * E) * invEGF2 * dpdv);
+
+  // Compute error bounds for sphere intersection
+  hermes::vec3 pError = hermes::Numbers::gamma(5) * hermes::abs((hermes::vec3) pHit);
+
+  // Return _SurfaceInteraction_ for quadric intersection
+  bool flipNormal = HELIOS_MASK_BIT(shape->flags, shape_flags::REVERSE_ORIENTATION) ^
+      HELIOS_MASK_BIT(shape->flags, shape_flags::TRANSFORM_SWAP_HANDEDNESS);
+  hermes::vec3 woObject = shape->w2o(wo);
+  return transform(shape->o2w, SurfaceInteraction(
+      hermes::point3i(pHit, pError),
+      hermes::point2(u, v), woObject, dpdu, dpdv,
+      dndu, dndv, time, flipNormal));
+}
+
+HERMES_DEVICE_CALLABLE ShapeIntersectionReturn Sphere::intersect(const Shape *shape, const Ray &r, real_t t_max) const {
+  auto isect = intersectQuadric(shape, r, t_max);
+  if (!isect)
+    return {};
+  auto intr = interactionFromIntersection(shape, *isect, -r.d, r.time);
+  return ShapeIntersection{intr, isect->t_hit};
+
   real_t phi;
   point3 phit;
   // transform HRay to object space
@@ -139,7 +263,8 @@ HERMES_DEVICE_CALLABLE ShapeIntersectionReturn Sphere::intersect(const Shape *sh
   };
 }
 
-HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape *shape, const Ray &r) const {
+HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape *shape, const Ray &r, real_t t_max) const {
+  return intersectQuadric(shape, r).hasValue();
   real_t phi;
   point3 phit;
   // transform HRay to object space
@@ -148,7 +273,7 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape *shape, const Ray &r)
   //    initialize efloat ray coordinate valyes
   EFloat ox(ray.o.x, oErr.x), oy(ray.o.y, oErr.y), oz(ray.o.z, oErr.z);
   EFloat dx(ray.d.x, dErr.x), dy(ray.d.y, dErr.y), dz(ray.d.z, dErr.z);
-  // compute quadritic Sphere coefficients
+  // compute quadratic Sphere coefficients
   EFloat a = dx * dx + dy * dy + dz * dz;
   EFloat b = 2 * (dx * ox + dy * oy + dz * oz);
   EFloat c = ox * ox + oy * oy + oz * oz - EFloat(radius_) * EFloat(radius_);
@@ -156,15 +281,25 @@ HERMES_DEVICE_CALLABLE bool Sphere::intersectP(const Shape *shape, const Ray &r)
   EFloat t0, t1;
   if (!solve_quadratic(a, b, c, &t0, &t1))
     return false;
+  HERMES_LOG_VARIABLE((float) t0.lowerBound())
+  HERMES_LOG_VARIABLE((float) t0)
+  HERMES_LOG_VARIABLE((float) t0.upperBound())
+  HERMES_LOG_VARIABLE((float) t1.lowerBound())
+  HERMES_LOG_VARIABLE((float) t1)
+  HERMES_LOG_VARIABLE((float) t1.upperBound())
   // check quadric shape t0 and t1 for nearest intersection
   if (t0.upperBound() > ray.max_t || t1.lowerBound() <= 0)
     return false;
   EFloat thit = t0;
   if (thit.lowerBound() <= 0) {
     thit = t1;
+    HERMES_LOG_VARIABLE((float) thit)
+    HERMES_LOG_VARIABLE((float) thit.upperBound())
+    HERMES_LOG_VARIABLE((float) thit.lowerBound())
     if (thit.upperBound() > ray.max_t)
       return false;
   }
+  HERMES_LOG_VARIABLE((float) thit)
   // compute Sphere hit position and phi
   phit = ray((real_t) thit);
   // refine sphere intersection point

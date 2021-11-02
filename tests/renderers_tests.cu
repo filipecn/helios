@@ -45,7 +45,7 @@ TEST_CASE("SamplerRenderer") {
   // setup scene
   Scene scene;
   scene.addLight(PointLight::createLight({-10, 0, 0}, point_light_data));
-  auto sphere_shape = scene.addShape(Sphere::createShape(sphere_shape_data, {0, 0, 5}));
+  auto sphere_shape = scene.addShape(Shapes::createFrom<Sphere>(sphere_shape_data, {0, 0, 5}, {1, 1, 1}));
   scene.addPrimitive(GeometricPrimitive::createPrimitive(sphere_shape));
   REQUIRE(scene.prepare() == HeResult::SUCCESS);
   // image resolution

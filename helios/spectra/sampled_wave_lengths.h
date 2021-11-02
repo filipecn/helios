@@ -58,6 +58,20 @@ public:
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
+  [[nodiscard]] HERMES_DEVICE_CALLABLE bool secondaryTerminated() const {
+    for (int i = 1; i < Spectrum::n_samples; ++i)
+      if (pdf_[i] != 0)
+        return false;
+    return true;
+  }
+  HERMES_DEVICE_CALLABLE void terminateSecondary() {
+    if (secondaryTerminated())
+      return;
+    // Update wavelength probabilities for termination
+    for (int i = 1; i < Spectrum::n_samples; ++i)
+      pdf_[i] = 0;
+    pdf_[0] /= Spectrum::n_samples;
+  }
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************

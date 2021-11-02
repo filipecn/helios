@@ -45,10 +45,10 @@ public:
   // *******************************************************************************************************************
   static BxDF createBxDF(mem::Ptr data_ptr) {
     bxdf_flags flags{bxdf_flags::NONE};
-    if (reinterpret_cast<DielectricBxDF *>(data_ptr.get())->eta_ == 1)
+    if (data_ptr.get<DielectricBxDF>()->eta_ == 1)
       flags = bxdf_flags::TRANSMISSION;
     flags = flags | bxdf_flags::REFLECTION;
-    if (reinterpret_cast<DielectricBxDF *>(data_ptr.get())->mf_distribution_.effectivelySmooth())
+    if (data_ptr.get<DielectricBxDF>()->mf_distribution_.effectivelySmooth())
       flags = flags | bxdf_flags::SPECULAR;
     else
       flags = flags | bxdf_flags::GLOSSY;

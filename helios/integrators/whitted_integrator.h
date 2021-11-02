@@ -44,14 +44,14 @@ public:
 
   template<class SamplerType, typename SceneType>
   HERMES_DEVICE_CALLABLE SpectrumOld
-  Li(const RayDifferential &ray, const SceneType &scene, SamplerType &sampler, int depth = 0) {
+  Li(RayDifferential ray, const SceneType &scene, SamplerType &sampler) {
     SpectrumOld L(0.);
     // Find closest ray intersection or return background radiance
     auto si = scene.intersect(ray.ray);
     if (!si) {
       for (const auto &light : scene.lights) {
         if (light.value.type == LightType::POINT)
-          L += reinterpret_cast<const PointLight *>(light.value.data_ptr.get())->Le(ray);
+          L += light.value.data_ptr.template get<PointLight>()->Le(ray);
       }
       return L;
     }

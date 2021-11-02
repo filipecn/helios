@@ -7,7 +7,6 @@
 
 using namespace helios;
 
-
 HERMES_CUDA_KERNEL(checkListAggregate)(bool *r, Scene::View s) {
   HERMES_CUDA_RETURN_IF_NOT_THREAD_0
   Ray ray({0, 0, 0}, {1, 0, 0});
@@ -30,7 +29,7 @@ TEST_CASE("ListAggregate") {
   // add 10 primitives/shapes
   for (int i = 0; i < 10; ++i) {
     auto *sphere_shape = scene.addShape(
-        Sphere::createShape(sphere_shape_data, {1.f * i, 1, 1}));
+        Shapes::createFrom<Sphere>(sphere_shape_data, {1.f * i, 1, 1}, {1, 1, 1}));
     // add 2 geometrical primitives that use the same shape
     scene.addPrimitive(GeometricPrimitive::createPrimitive(sphere_shape));
   }
@@ -41,5 +40,5 @@ TEST_CASE("ListAggregate") {
   hermes::UnifiedArray<bool> result(1);
   HERMES_CUDA_LAUNCH_AND_SYNC((1), checkListAggregate_k, result.data(), scene.view())
   REQUIRE(result[0]);
-  std::cerr << mem::dumpMemory() ;
+  std::cerr << mem::dumpMemory();
 }

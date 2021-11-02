@@ -34,25 +34,11 @@
 
 namespace helios {
 
-// MaterialEvalContext Definition
-struct MaterialEvalContext : public TextureEvalContext {
-  // MaterialEvalContext Public Methods
-  MaterialEvalContext() = default;
-  HERMES_DEVICE_CALLABLE
-  MaterialEvalContext(const SurfaceInteraction &si)
-      : TextureEvalContext(si), wo(si.wo), ns(si.shading.n), dpdus(si.shading.dpdu) {}
-  std::string ToString() const;
-
-  hermes::vec3 wo;
-  hermes::normal3 ns;
-  hermes::vec3 dpdus;
-};
-
 #define CAST_MATERIAL(MATERIAL, PTR, CODE)                                                                          \
 {                                                                                                                   \
   switch(MATERIAL.type) {                                                                                           \
     case MaterialType::DIELECTRIC: {                                                                                \
-                     DielectricMaterial * PTR = (DielectricMaterial*)MATERIAL.data_ptr.get(); CODE break; }         \
+                     auto * PTR = MATERIAL.data_ptr.get<DielectricMaterial>(); CODE break; }         \
   }                                                                                                                 \
 }
 
@@ -60,9 +46,35 @@ struct MaterialEvalContext : public TextureEvalContext {
 {                                                                                                                   \
   switch(MATERIAL.type) {                                                                                           \
     case MaterialType::DIELECTRIC: {                                                                                \
-         const DielectricMaterial * PTR = (const DielectricMaterial*)MATERIAL.data_ptr.get(); CODE break; }         \
+         const auto * PTR = MATERIAL.data_ptr.get<DielectricMaterial>(); CODE break; }         \
   }                                                                                                                 \
 }
+
+struct Materials {
+  ///
+  /// \tparam T
+  /// \return
+  template<typename T>
+  HERMES_DEVICE_CALLABLE static MaterialType enumFromType() {
+    if (std::is_same_v<T, DielectricMaterial>)
+      return MaterialType::DIELECTRIC;
+    return MaterialType::CUSTOM;
+  }
+  ///
+  /// \tparam Allocator
+  /// \tparam T
+  /// \tparam P
+  /// \param allocator
+  /// \param params
+  /// \return
+  template<typename T, typename Allocator, typename ... P>
+  static Material create(Allocator allocator, P &&... params) {
+    Material material;
+    material.data_ptr = allocator.template allocate<T>(std::forward<P>(params)...);
+    material.type = enumFromType<T>();
+    return material;
+  }
+};
 
 }
 

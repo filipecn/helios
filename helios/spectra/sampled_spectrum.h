@@ -37,8 +37,8 @@ namespace helios {
 // *********************************************************************************************************************
 //                                                                                                    SampledSpectrum
 // *********************************************************************************************************************
-/// Represent a SPD with uniformly spaced samples over an wavelength range.
-/// The wavelengths covers from 400 nm to 700 nm
+/// Represents a SPD with uniformly spaced samples over a wavelength range.
+/// The wavelengths range covers from 400 nm to 700 nm
 class SampledSpectrum {
 public:
   // *******************************************************************************************************************

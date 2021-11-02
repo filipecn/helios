@@ -37,7 +37,7 @@ namespace helios {
 {                                                                                                                   \
   switch(BXDF.type) {                                                                                               \
     case BxDFType::DIELECTRIC: {                                                                                    \
-                     DielectricBxDF * PTR = (DielectricBxDF*)BXDF.data_ptr.get(); CODE break; }                     \
+                     DielectricBxDF * PTR = BXDF.data_ptr.template get<DielectricBxDF>(); CODE break; }                     \
   }                                                                                                                 \
 }
 
@@ -45,9 +45,35 @@ namespace helios {
 {                                                                                                                   \
   switch(BXDF.type) {                                                                                               \
     case MaterialType::DIELECTRIC: {                                                                                \
-         const DielectricMaterial * PTR = (const DielectricMaterial*)BXDF.data_ptr.get(); CODE break; }             \
+         const DielectricMaterial * PTR = BXDF.data_ptr.template get<DielectricBxDF>(); CODE break; }             \
   }                                                                                                                 \
 }
+
+struct BxDFs {
+  ///
+  /// \tparam T
+  /// \return
+  template<typename T>
+  HERMES_DEVICE_CALLABLE static BxDFType enumFromType() {
+    if (std::is_same_v<T, DielectricBxDF>)
+      return BxDFType::DIELECTRIC;
+    return BxDFType::CUSTOM;
+  }
+  ///
+  /// \tparam Allocator
+  /// \tparam T
+  /// \tparam P
+  /// \param allocator
+  /// \param params
+  /// \return
+  template<typename T, typename Allocator, typename ... P>
+  static BxDF create(Allocator allocator, P &&... params) {
+    BxDF bxdf;
+    bxdf.data_ptr = allocator.template allocate<T>(std::forward<P>(params)...);
+    bxdf.type = enumFromType<T>();
+    return bxdf;
+  }
+};
 
 }
 

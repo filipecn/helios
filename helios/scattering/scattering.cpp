@@ -158,7 +158,7 @@ HERMES_DEVICE_CALLABLE real_t Scattering::frDielectric(real_t cos_theta_i, real_
   real_t sin2Theta_t = sin2Theta_i / hermes::Numbers::sqr(eta);
   if (sin2Theta_t >= 1)
     return 1.f;
-  real_t cosTheta_t = hermes::Numbers::safeSqrt(1 - sin2Theta_t);
+  real_t cosTheta_t = hermes::Numbers::safe_sqrt(1 - sin2Theta_t);
 
   real_t r_parl = (eta * cos_theta_i - cosTheta_t) / (eta * cos_theta_i + cosTheta_t);
   real_t r_perp = (cos_theta_i - eta * cosTheta_t) / (cos_theta_i + eta * cosTheta_t);
@@ -184,7 +184,7 @@ HERMES_DEVICE_CALLABLE bool Scattering::refract(const hermes::vec3 &wi,
   if (sin2Theta_t >= 1)
     return false;
 
-  real_t cosTheta_t = hermes::Numbers::safeSqrt(1 - sin2Theta_t);
+  real_t cosTheta_t = hermes::Numbers::safe_sqrt(1 - sin2Theta_t);
 
   *wt = -wi / eta + (cosTheta_i / eta - cosTheta_t) * hermes::vec3(n);
   // Provide relative IOR along ray to caller

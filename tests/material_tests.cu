@@ -27,31 +27,14 @@
 
 #include <catch2/catch.hpp>
 
-#include <helios/geometry/ray.h>
-#include <helios/shapes.h>
-#include <helios/shapes/intersection.h>
+#include <helios/materials.h>
 
 using namespace helios;
 
-TEST_CASE("Sphere") {
-  SECTION("shapes") {
-    mem::init(1024);
-    auto s = Shapes::create<Sphere>(mem::allocator(), Sphere::unitSphere());
-    REQUIRE(s.bounds.lower == hermes::point3(-1, -1, -1));
-    REQUIRE(s.bounds.upper == hermes::point3(1, 1, 1));
-    auto s2 = Shapes::createFrom<Sphere>(s.data_ptr, {0, 0, 0}, {2, 2, 2});
-    REQUIRE(s2.bounds.lower == hermes::point3(-2, -2, -2));
-    REQUIRE(s2.bounds.upper == hermes::point3(2, 2, 2));
-    auto r = Ray({-2, 0, 0}, {1, 0, 0});
-    CAST_SHAPE(s, ptr,
-               REQUIRE(ptr->intersectP(&s, r));
-    )
-  }//
+TEST_CASE("DielectricMaterial") {
+  mem::init(1024);
+  Spectrum s;
+  auto m = Materials::create<DielectricMaterial>(mem::allocator(), s, false);
+  CAST_MATERIAL(m, ptr, /**/)
 }
 
-TEST_CASE("bounds", "[geometry]") {
-  Ray ray({0, 0, 0}, {1, 0, 0});
-  bounds3 box{{2, -1, -1}, {4, 2, 2}};
-  real_t h0, h1;
-  REQUIRE(intersection::intersectP(box, ray, &h0, &h1));
-}

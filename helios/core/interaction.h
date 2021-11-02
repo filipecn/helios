@@ -24,11 +24,12 @@
 #ifndef HELIOS_INTERACTION_H
 #define HELIOS_INTERACTION_H
 
+#include <helios/materials.h>
 #include <helios/geometry/ray.h>
 #include <hermes/geometry/normal.h>
 #include <hermes/geometry/point.h>
-#include <helios/base/material.h>
 #include <helios/core/bsdf.h>
+#include <helios/spectra/sampled_wave_lengths.h>
 
 namespace helios {
 
@@ -56,6 +57,17 @@ public:
   /// \param time
   HERMES_DEVICE_CALLABLE Interaction(const hermes::point3 &point,
                                      real_t time /*, const MediumInterface& mediumInterface*/);
+  ///
+  /// \param pi
+  /// \param n
+  /// \param uv
+  /// \param wo
+  /// \param time
+  HERMES_DEVICE_CALLABLE Interaction(hermes::point3i pi,
+                                     hermes::normal3 n,
+                                     hermes::point2 uv,
+                                     hermes::vec3 wo,
+                                     real_t time);
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
@@ -71,7 +83,8 @@ public:
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************
-  hermes::point3 p;                            //!< point of interaction
+  hermes::point3 p;                            //!< point of interaction TODO remove it!
+  hermes::point3i pi;                          //!< point of interaction
   real_t time{0};                              //!< time of interaction (ray's parametric coordinate)
   hermes::vec3 pError;                         //!< error associated with p computation
   hermes::vec3 wo;                             //!< negative ray direction (outgoing direction)
@@ -104,6 +117,24 @@ public:
                                             const hermes::vec3 &dpdu, const hermes::vec3 &dpdv,
                                             const hermes::normal3 &dndu, const hermes::normal3 &dndv,
                                             real_t t);
+  /// \param pi
+  /// \param uv
+  /// \param wo
+  /// \param dpdu
+  /// \param dpdv
+  /// \param dndu
+  /// \param dndv
+  /// \param time
+  /// \param flipNormal
+  HERMES_DEVICE_CALLABLE SurfaceInteraction(hermes::point3i pi,
+                                            hermes::point2 uv,
+                                            hermes::vec3 wo,
+                                            hermes::vec3 dpdu,
+                                            hermes::vec3 dpdv,
+                                            hermes::normal3 dndu,
+                                            hermes::normal3 dndv,
+                                            real_t time,
+                                            bool flipNormal);
   // *******************************************************************************************************************
   //                                                                                                          METHODS
   // *******************************************************************************************************************
@@ -122,7 +153,21 @@ public:
   ///
   /// \param ray
   /// \return
-  HERMES_DEVICE_CALLABLE BSDF bsdf(const RayDifferential &ray);
+  template<typename Allocator>
+  HERMES_DEVICE_CALLABLE BSDF bsdf(const RayDifferential &ray, SampledWaveLengths &lambda, Allocator allocator) {
+    // compute differentials for intersection
+    computeDifferentials(ray);
+    // check if material exists
+    if (!material)
+      return {};
+    // TODO: normal & bump map
+    CAST_MATERIAL(material, material_ptr,
+                  auto b = material_ptr->bxdf(allocator, lambda);
+                      CAST_BXDF(b, ptr, /**/)
+                      return BSDF(shading.n, shading.dpdu, material_ptr->bxdf(allocator, lambda));
+    )
+    return {};
+  }
   // *******************************************************************************************************************
   //                                                                                                    PUBLIC FIELDS
   // *******************************************************************************************************************

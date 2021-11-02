@@ -2,7 +2,7 @@
 #define HELIOS_CORE_REFLECTION_H
 
 #include <helios/base/spectrum.h>
-#include <hermes/geometry/vector.h>
+#include <hermes/geometry/normal.h>
 
 namespace helios {
 

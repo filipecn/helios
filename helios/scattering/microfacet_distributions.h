@@ -37,7 +37,7 @@ namespace helios {
 {                                                                                                                   \
   switch(MICROFACET_DISTRIBUTION.type) {                                                                                           \
     case MicrofacetDistributionType::TROWBRIDGE_REITZ: {                                                                                \
-                     TrowbridgeReitzDistribution * PTR = (TrowbridgeReitzDistribution*)MICROFACET_DISTRIBUTION.data_ptr.get(); CODE break; }         \
+                     auto * PTR = MICROFACET_DISTRIBUTION.data_ptr.get<TrowbridgeReitzDistribution>(); CODE break; }         \
   }                                                                                                                 \
 }
 
@@ -45,9 +45,35 @@ namespace helios {
 {                                                                                                                   \
   switch(MICROFACET_DISTRIBUTION.type) {                                                                                           \
     case MicrofacetDistributionType::TROWBRIDGE_REITZ: {                                                                                \
-         const DielectricMaterial * PTR = (const DielectricMaterial*)MICROFACET_DISTRIBUTION.data_ptr.get(); CODE break; }         \
+         const auto * PTR = MICROFACET_DISTRIBUTION.data_ptr.get<TrowbridgeReitzDistribution>(); CODE break; }         \
   }                                                                                                                 \
 }
+
+struct MicrofacetDistributions {
+  ///
+  /// \tparam T
+  /// \return
+  template<typename T>
+  HERMES_DEVICE_CALLABLE static MicrofacetDistributionType enumFromType() {
+    if (std::is_same_v<T, TrowbridgeReitzDistribution>)
+      return MicrofacetDistributionType::TROWBRIDGE_REITZ;
+    return MicrofacetDistributionType::CUSTOM;
+  }
+  ///
+  /// \tparam T
+  /// \tparam Allocator
+  /// \tparam P
+  /// \param allocator
+  /// \param params
+  /// \return
+  template<typename T, typename Allocator, typename ... P>
+  HERMES_DEVICE_CALLABLE static MicrofacetDistribution create(Allocator allocator, P &&... params) {
+    MicrofacetDistribution mf_distribution;
+    mf_distribution.data_ptr = allocator.template allocate<T>(std::forward<P>(params)...);
+    mf_distribution.type = enumFromType<T>();
+    return mf_distribution;
+  }
+};
 
 }
 #endif //HELIOS_HELIOS_SCATTERING_MICROFACET_DISTRIBUTIONS_H

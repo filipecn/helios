@@ -52,6 +52,14 @@ struct ShapeIntersection {
 
 using ShapeIntersectionReturn = hermes::Optional<ShapeIntersection>;
 
+struct QuadricIntersection {
+  real_t t_hit;
+  hermes::point3 p_obj;
+  real_t phi;
+};
+
+using QuadricIntersectionReturn = hermes::Optional<QuadricIntersection>;
+
 enum class ShapeType {
   SPHERE,
   MESH,
@@ -75,6 +83,20 @@ HELIOS_ENABLE_BITMASK_OPERATORS(shape_flags);
 /// set of primitives referenced by the shape.
 /// All shapes receive a unique id.
 struct Shape {
+  // *******************************************************************************************************************
+  //                                                                                                            SETUP
+  // *******************************************************************************************************************
+  Shape &withFlags(shape_flags new_flags) {
+    flags = new_flags;
+    return *this;
+  }
+  Shape &withTransform(const hermes::Transform object2world) {
+    o2w = object2world;
+    auto o_bounds = w2o(bounds);
+    w2o = hermes::inverse(object2world);
+    bounds = o2w(o_bounds);
+    return *this;
+  }
   // *******************************************************************************************************************
   //                                                                                                        OPERATORS
   // *******************************************************************************************************************

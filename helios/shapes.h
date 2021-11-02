@@ -41,16 +41,62 @@ namespace helios {
 #define CAST_SHAPE(SHAPE, PTR, CODE)                                                                                \
 {                                                                                                                   \
   switch(SHAPE.type) {                                                                                              \
-    case ShapeType::SPHERE: { Sphere * PTR = (Sphere*)SHAPE.data_ptr.get(); CODE break; }                         \
+    case ShapeType::SPHERE: { Sphere * PTR = SHAPE.data_ptr.get<Sphere>(); CODE break; }                         \
   }                                                                                                                 \
 }
 
 #define CAST_CONST_SHAPE(SHAPE, PTR, CODE)                                                                          \
 {                                                                                                                   \
   switch(SHAPE.type) {                                                                                              \
-    case ShapeType::SPHERE: { const auto * PTR = (const Sphere*)SHAPE.data_ptr.get(); CODE break; }               \
+    case ShapeType::SPHERE: { const auto * PTR = SHAPE.data_ptr.get<Sphere>(); CODE break; }               \
   }                                                                                                                 \
 }
+
+struct Shapes {
+  ///
+  /// \tparam T
+  /// \return
+  template<typename T>
+  HERMES_DEVICE_CALLABLE static ShapeType enumFromType() {
+    if (std::is_same_v<T, Sphere>)
+      return ShapeType::SPHERE;
+    return ShapeType::CUSTOM;
+  }
+  ///
+  /// \tparam Allocator
+  /// \tparam T
+  /// \tparam P
+  /// \param allocator
+  /// \param params
+  /// \return
+  template<typename T, typename Allocator, typename ... P>
+  static Shape create(Allocator allocator, P &&... params) {
+    Shape shape;
+    shape.data_ptr = allocator.template allocate<T>(std::forward<P>(params)...);
+    shape.type = enumFromType<T>();
+    shape.bounds = shape.data_ptr.get<T>()->objectBound();
+    return shape;
+  }
+  ///
+  /// \tparam T
+  /// \param data_ptr
+  /// \param position
+  /// \param scale
+  /// \return
+  template<typename T>
+  static Shape createFrom(mem::Ptr data_ptr,
+                          const hermes::point3 &position = {0, 0, 0},
+                          const hermes::vec3 &scale = {1, 1, 1}) {
+    Shape shape;
+    shape.data_ptr = data_ptr;
+    shape.type = enumFromType<T>();
+    shape.o2w = hermes::Transform::translate(hermes::vec3(position))
+        * hermes::Transform::scale(scale.x, scale.y, scale.z);
+    shape.w2o = hermes::inverse(shape.o2w);
+    shape.bounds = shape.o2w(shape.data_ptr.get<T>()->objectBound());
+    return shape;
+  }
+};
 
 }
 

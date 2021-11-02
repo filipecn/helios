@@ -37,7 +37,7 @@ namespace helios {
 {                                                                                                                   \
   switch(SPECTRUM.type) {                                                                                           \
     case SpectrumType::BLACKBODY: {                                                                                \
-                     BlackbodySpectrum * PTR = (BlackbodySpectrum*)SPECTRUM.data_ptr.get(); CODE break; }         \
+                     BlackbodySpectrum * PTR = SPECTRUM.data_ptr.get<BlackbodySpectrum>(); CODE break; }         \
   }                                                                                                                 \
 }
 
@@ -45,7 +45,7 @@ namespace helios {
 {                                                                                                                   \
   switch(SPECTRUM.type) {                                                                                           \
     case SpectrumType::BLACKBODY: {                                                                                \
-         const BlackbodySpectrum * PTR = (const BlackbodySpectrum*)SPECTRUM.data_ptr.get(); CODE break; }         \
+         const BlackbodySpectrum * PTR = SPECTRUM.data_ptr.get<BlackbodySpectrum>(); CODE break; }         \
   }                                                                                                                 \
 }
 

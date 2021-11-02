@@ -31,6 +31,93 @@ using namespace hermes;
 
 namespace helios {
 
+HERMES_DEVICE_CALLABLE hermes::point3i transform(const hermes::Transform &m, const hermes::point3i &p) {
+  auto x = real_t(p.x), y = real_t(p.y), z = real_t(p.z);
+
+  real_t xp = (m[0][0] * x + m[0][1] * y) + (m[0][2] * z + m[0][3]);
+  real_t yp = (m[1][0] * x + m[1][1] * y) + (m[1][2] * z + m[1][3]);
+  real_t zp = (m[2][0] * x + m[2][1] * y) + (m[2][2] * z + m[2][3]);
+  real_t wp = (m[3][0] * x + m[3][1] * y) + (m[3][2] * z + m[3][3]);
+
+  // Compute absolute error for transformed point, _pError_
+  hermes::vec3 pError;
+  if (p.x.isExact() && p.y.isExact() && p.z.isExact()) {
+    // Compute error for transformed exact _p_
+    pError.x = Numbers::gamma(3) * (std::abs(m[0][0] * x) + std::abs(m[0][1] * y) +
+        std::abs(m[0][2] * z) + std::abs(m[0][3]));
+    pError.y = Numbers::gamma(3) * (std::abs(m[1][0] * x) + std::abs(m[1][1] * y) +
+        std::abs(m[1][2] * z) + std::abs(m[1][3]));
+    pError.z = Numbers::gamma(3) * (std::abs(m[2][0] * x) + std::abs(m[2][1] * y) +
+        std::abs(m[2][2] * z) + std::abs(m[2][3]));
+
+  } else {
+    // Compute error for transformed approximate _p_
+    hermes::vec3 pInError(p.x.radius(), p.y.radius(), p.z.radius());
+    pError.x = (Numbers::gamma(3) + 1) * (std::abs(m[0][0]) * pInError.x +
+        std::abs(m[0][1]) * pInError.y +
+        std::abs(m[0][2]) * pInError.z) +
+        Numbers::gamma(3) * (std::abs(m[0][0] * x) + std::abs(m[0][1] * y) +
+            std::abs(m[0][2] * z) + std::abs(m[0][3]));
+    pError.y = (Numbers::gamma(3) + 1) * (std::abs(m[1][0]) * pInError.x +
+        std::abs(m[1][1]) * pInError.y +
+        std::abs(m[1][2]) * pInError.z) +
+        Numbers::gamma(3) * (std::abs(m[1][0] * x) + std::abs(m[1][1] * y) +
+            std::abs(m[1][2] * z) + std::abs(m[1][3]));
+    pError.z = (Numbers::gamma(3) + 1) * (std::abs(m[2][0]) * pInError.x +
+        std::abs(m[2][1]) * pInError.y +
+        std::abs(m[2][2]) * pInError.z) +
+        Numbers::gamma(3) * (std::abs(m[2][0] * x) + std::abs(m[2][1] * y) +
+            std::abs(m[2][2] * z) + std::abs(m[2][3]));
+  }
+
+  if (wp == 1)
+    return hermes::point3i(hermes::Interval<real_t>::withRadius(xp, pError.x),
+                           hermes::Interval<real_t>::withRadius(yp, pError.y),
+                           hermes::Interval<real_t>::withRadius(zp, pError.z));
+  else
+    return hermes::point3i(hermes::Interval<real_t>::withRadius(xp, pError.x) / wp,
+                           hermes::Interval<real_t>::withRadius(yp, pError.y) / wp,
+                           hermes::Interval<real_t>::withRadius(zp, pError.z) / wp);
+}
+
+HERMES_DEVICE_CALLABLE hermes::vec3i transform(const hermes::Transform &m, const hermes::vec3i &v) {
+  auto x = real_t(v.x), y = real_t(v.y), z = real_t(v.z);
+  hermes::vec3 vOutError;
+  if (v.x.isExact() && v.y.isExact() && v.z.isExact()) {
+    vOutError.x = Numbers::gamma(3) * (std::abs(m[0][0] * x) + std::abs(m[0][1] * y) +
+        std::abs(m[0][2] * z));
+    vOutError.y = Numbers::gamma(3) * (std::abs(m[1][0] * x) + std::abs(m[1][1] * y) +
+        std::abs(m[1][2] * z));
+    vOutError.z = Numbers::gamma(3) * (std::abs(m[2][0] * x) + std::abs(m[2][1] * y) +
+        std::abs(m[2][2] * z));
+  } else {
+    hermes::vec3 vInError(v.x.radius(), v.y.radius(), v.z.radius());
+    vOutError.x = (Numbers::gamma(3) + 1) * (std::abs(m[0][0]) * vInError.x +
+        std::abs(m[0][1]) * vInError.y +
+        std::abs(m[0][2]) * vInError.z) +
+        Numbers::gamma(3) * (std::abs(m[0][0] * x) + std::abs(m[0][1] * y) +
+            std::abs(m[0][2] * z));
+    vOutError.y = (Numbers::gamma(3) + 1) * (std::abs(m[1][0]) * vInError.x +
+        std::abs(m[1][1]) * vInError.y +
+        std::abs(m[1][2]) * vInError.z) +
+        Numbers::gamma(3) * (std::abs(m[1][0] * x) + std::abs(m[1][1] * y) +
+            std::abs(m[1][2] * z));
+    vOutError.z = (Numbers::gamma(3) + 1) * (std::abs(m[2][0]) * vInError.x +
+        std::abs(m[2][1]) * vInError.y +
+        std::abs(m[2][2]) * vInError.z) +
+        Numbers::gamma(3) * (std::abs(m[2][0] * x) + std::abs(m[2][1] * y) +
+            std::abs(m[2][2] * z));
+  }
+
+  real_t xp = m[0][0] * x + m[0][1] * y + m[0][2] * z;
+  real_t yp = m[1][0] * x + m[1][1] * y + m[1][2] * z;
+  real_t zp = m[2][0] * x + m[2][1] * y + m[2][2] * z;
+
+  return hermes::vec3i(hermes::Interval<real_t>::withRadius(xp, vOutError.x),
+                       hermes::Interval<real_t>::withRadius(yp, vOutError.y),
+                       hermes::Interval<real_t>::withRadius(zp, vOutError.z));
+}
+
 HERMES_DEVICE_CALLABLE vec3 transform(const Transform &t, const vec3 &v, vec3 &err) {
   real_t x = v.x, y = v.y, z = v.z;
   real_t xv = t[0][0] * x + t[0][1] * y + t[0][2] * z;
